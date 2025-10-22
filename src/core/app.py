@@ -429,7 +429,12 @@ class WordPressMCPClient:
         return self.call_mcp_function('wp_get_post_types')
 
 # Flask Application Setup
-app = Flask(__name__)
+# Configure static and template folders relative to project root
+import os
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+static_folder = os.path.join(project_root, 'static')
+
+app = Flask(__name__, static_folder=static_folder)
 app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
 CORS(app)
 

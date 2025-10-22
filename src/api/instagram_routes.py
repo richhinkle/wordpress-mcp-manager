@@ -422,3 +422,73 @@ def test_cache_behavior(username):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/debug/find-actors')
+def find_instagram_actors():
+    """Find available Instagram actors on Apify"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        # Test current actor ID
+        current_available = apify_manager.scraper.scraper.test_actor_availability(
+            apify_manager.scraper.scraper.actor_id
+        )
+        
+        # Find Instagram actors
+        actors = apify_manager.scraper.scraper.find_instagram_actors()
+        
+        # Test some common actor IDs
+        common_ids = [
+            'apify/instagram-scraper',
+            'apify/instagram-post-scraper',
+            'dtrungtin/instagram-scraper',
+            'jaroslavhejlek/instagram-scraper'
+        ]
+        
+        tested_actors = []
+        for actor_id in common_ids:
+            available = apify_manager.scraper.scraper.test_actor_availability(actor_id)
+            tested_actors.append({
+                'id': actor_id,
+                'available': available
+            })
+        
+        return jsonify({
+            'success': True,
+            'current_actor': {
+                'id': apify_manager.scraper.scraper.actor_id,
+                'available': current_available
+            },
+            'found_actors': actors,
+            'tested_common_actors': tested_actors
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/debug/test-actor/<path:actor_id>')
+def test_actor(actor_id):
+    """Test if a specific actor ID works"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        # Test actor availability
+        available = apify_manager.scraper.scraper.test_actor_availability(actor_id)
+        
+        return jsonify({
+            'success': True,
+            'actor_id': actor_id,
+            'available': available,
+            'message': f'Actor {actor_id} is {"available" if available else "not available"}'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

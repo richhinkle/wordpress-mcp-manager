@@ -1009,4 +1009,233 @@ async function clearAllCache() {
 //             addChatMessage('system', `❌ Import failed: ${error.message}`);
 //         }
 //     }
-// }
+// }// Instagr
+am Post Viewer Functions
+let currentPosts = [];
+let currentPostIndex = 0;
+
+function displayInstagramPosts(posts) {
+    currentPosts = posts;
+    currentPostIndex = 0;
+    
+    if (posts.length === 0) {
+        showEmptyPostViewer();
+        return;
+    }
+    
+    showPostViewer();
+    displayCurrentPost();
+}
+
+function showEmptyPostViewer() {
+    const postDisplay = document.getElementById('post-display');
+    postDisplay.innerHTML = `
+        <div class="empty-state">
+            <div class="icon">📱</div>
+            <h3>No Instagram Posts Found</h3>
+            <p>Try scraping a different username or check if the account exists</p>
+        </div>
+    `;
+}
+
+function showPostViewer() {
+    const postDisplay = document.getElementById('post-display');
+    postDisplay.innerHTML = `
+        <img id="post-image" class="post-image" src="" alt="Instagram post" />
+        <div class="post-content">
+            <div class="post-meta">
+                <span id="post-username"></span>
+                <span id="post-date"></span>
+            </div>
+            <div id="post-caption" class="post-caption"></div>
+            <div id="post-hashtags" class="post-hashtags"></div>
+            <div style="font-size: 0.9em; color: #666;">
+                <span id="post-engagement"></span>
+            </div>
+        </div>
+        <div class="post-actions">
+            <button class="btn success" onclick="importCurrentPostToWordPress()">
+                📝 Import to WordPress
+            </button>
+            <button class="btn secondary" onclick="viewPostOnInstagram()">
+                🔗 View on Instagram
+            </button>
+        </div>
+        <div class="post-navigation">
+            <button class="nav-btn" id="prev-btn" onclick="previousPost()" disabled>
+                ← Previous
+            </button>
+            <span class="post-counter" id="post-counter">1 of 1</span>
+            <button class="nav-btn" id="next-btn" onclick="nextPost()" disabled>
+                Next →
+            </button>
+        </div>
+    `;
+}
+
+function displayCurrentPost() {
+    if (currentPosts.length === 0) return;
+    
+    const post = currentPosts[currentPostIndex];
+    
+    // Update image
+    const postImage = document.getElementById('post-image');
+    if (postImage) {
+        postImage.src = post.image_url || '';
+        postImage.alt = post.alt_text || 'Instagram post';
+    }
+    
+    // Update content
+    const usernameEl = document.getElementById('post-username');
+    if (usernameEl) usernameEl.textContent = `@${post.username}`;
+    
+    const dateEl = document.getElementById('post-date');
+    if (dateEl) dateEl.textContent = post.date_posted || '';
+    
+    const captionEl = document.getElementById('post-caption');
+    if (captionEl) captionEl.textContent = post.caption || '';
+    
+    const hashtagsEl = document.getElementById('post-hashtags');
+    if (hashtagsEl) {
+        const hashtags = post.hashtags || [];
+        hashtagsEl.textContent = hashtags.map(tag => `#${tag}`).join(' ');
+    }
+    
+    const engagementEl = document.getElementById('post-engagement');
+    if (engagementEl) {
+        engagementEl.textContent = `❤️ ${post.likes_count || 0} likes • 💬 ${post.comments_count || 0} comments`;
+    }
+    
+    // Update navigation
+    const counterEl = document.getElementById('post-counter');
+    if (counterEl) {
+        counterEl.textContent = `${currentPostIndex + 1} of ${currentPosts.length}`;
+    }
+    
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    
+    if (prevBtn) prevBtn.disabled = currentPostIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentPostIndex === currentPosts.length - 1;
+}
+
+function previousPost() {
+    if (currentPostIndex > 0) {
+        currentPostIndex--;
+        displayCurrentPost();
+    }
+}
+
+function nextPost() {
+    if (currentPostIndex < currentPosts.length - 1) {
+        currentPostIndex++;
+        displayCurrentPost();
+    }
+}
+
+function importCurrentPostToWordPress() {
+    if (currentPosts.length === 0) return;
+    
+    const post = currentPosts[currentPostIndex];
+    
+    // Show loading state
+    const importBtn = document.querySelector('.post-actions .btn.success');
+    const originalText = importBtn.textContent;
+    importBtn.textContent = '⏳ Importing...';
+    importBtn.disabled = true;
+    
+    // Import the single post
+    importApifyPostsToWordPress([post]).then(() => {
+        // Reset button
+        importBtn.textContent = '✅ Imported!';
+        setTimeout(() => {
+            importBtn.textContent = originalText;
+            importBtn.disabled = false;
+        }, 2000);
+    }).catch(() => {
+        // Reset button on error
+        importBtn.textContent = originalText;
+        importBtn.disabled = false;
+    });
+}
+
+function viewPostOnInstagram() {
+    if (currentPosts.length === 0) return;
+    
+    const post = currentPosts[currentPostIndex];
+    if (post.post_url) {
+        window.open(post.post_url, '_blank');
+    }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (currentPosts.length === 0) return;
+    
+    if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        previousPost();
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextPost();
+    } else if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        importCurrentPostToWordPress();
+    }
+});
+
+// Update existing scraping functions to use the new viewer
+async function scrapeInstagramUser(username, limit = 20) {
+    try {
+        addChatMessage('system', `🔄 Scraping @${username} via Apify (limit: ${limit})...`);
+        
+        const response = await apiCall('/api/instagram/apify/scrape-user', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                username: username,
+                limit: limit 
+            })
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ Scraped ${response.posts_count} posts from @${username}`);
+            
+            // Display posts in the viewer
+            displayInstagramPosts(response.posts);
+            
+            return response.posts;
+        } else {
+            addChatMessage('system', `❌ Scraping failed: ${response.error}`);
+            showEmptyPostViewer();
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Scraping failed: ${error.message}`);
+        showEmptyPostViewer();
+    }
+}
+
+async function scrapeInstagramUrls(urls) {
+    try {
+        addChatMessage('system', `🔄 Scraping ${urls.length} Instagram URLs via Apify...`);
+        
+        const response = await apiCall('/api/instagram/apify/scrape-urls', {
+            method: 'POST',
+            body: JSON.stringify({ urls: urls })
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ Scraped ${response.posts_count} posts from ${response.urls_count} URLs`);
+            
+            // Display posts in the viewer
+            displayInstagramPosts(response.posts);
+            
+            return response.posts;
+        } else {
+            addChatMessage('system', `❌ URL scraping failed: ${response.error}`);
+            showEmptyPostViewer();
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ URL scraping failed: ${error.message}`);
+        showEmptyPostViewer();
+    }
+}

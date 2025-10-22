@@ -21,7 +21,7 @@ class ApifyInstagramScraper:
     def __init__(self, api_token: str):
         self.api_token = api_token
         self.base_url = "https://api.apify.com/v2"
-        self.actor_id = "apify/instagram-scraper"
+        self.actor_id = "shu8hvrXbJbY3Eb9W"  # Instagram Scraper actor ID from Apify example
         self.session = requests.Session()
         self.session.headers.update({
             'Authorization': f'Bearer {self.api_token}',
@@ -42,20 +42,18 @@ class ApifyInstagramScraper:
         """
         logger.info(f"Starting Apify scrape for @{username}, limit: {limit}")
         
-        # Prepare input for Apify actor
+        # Prepare input for Apify actor (based on successful console run)
         actor_input = {
-            "usernames": [username],
+            "addParentData": False,
+            "directUrls": [f"https://www.instagram.com/{username}/"],
+            "enhanceUserSearchWithFacebookPage": False,
+            "isUserReelFeedURL": False,
+            "isUserTaggedFeedURL": False,
+            "onlyPostsNewerThan": "2024-01-01",  # Get posts from this year
             "resultsLimit": limit,
             "resultsType": "posts",
-            "searchType": "user",
-            "addParentData": True,
-            "enhanceUserSearchWithFacebookPage": False,
-            "isUserTaggedFeedURL": False,
-            "onlyPostsNewerThan": "",
-            "onlyPostsOlderThan": "",
-            "likedByUser": "",
-            "includeStories": include_stories,
-            "storiesLimit": 10 if include_stories else 0
+            "searchLimit": 1,
+            "searchType": "hashtag"
         }
         
         try:
@@ -68,10 +66,18 @@ class ApifyInstagramScraper:
             # Wait for completion and get results
             results = self._wait_for_completion(run_id)
             
+            # Debug: Log what we actually received
+            logger.info(f"Received {len(results)} items from Apify for @{username}")
+            if results:
+                logger.info(f"First item keys: {list(results[0].keys()) if results[0] else 'Empty item'}")
+                logger.info(f"First item type: {results[0].get('type') if results[0] else 'No type'}")
+                logger.info(f"Sample data: {str(results[0])[:300]}...")
+            
             # Format results for WordPress import
             formatted_posts = []
             for item in results:
-                if item.get('type') == 'post':
+                # Check for Instagram posts (Apify uses 'Image' or 'Video' as type)
+                if item.get('type') in ['Image', 'Video'] or 'shortCode' in item:
                     formatted_post = self._format_post_data(item, username)
                     if formatted_post:
                         formatted_posts.append(formatted_post)
@@ -97,11 +103,16 @@ class ApifyInstagramScraper:
         
         # Prepare input for URL-based scraping
         actor_input = {
+            "addParentData": False,
             "directUrls": urls,
+            "enhanceUserSearchWithFacebookPage": False,
+            "isUserReelFeedURL": False,
+            "isUserTaggedFeedURL": False,
+            "onlyPostsNewerThan": "2024-01-01",
+            "resultsLimit": len(urls) * 10,  # Allow multiple posts per URL
             "resultsType": "posts",
-            "searchType": "url",
-            "addParentData": True,
-            "enhanceUserSearchWithFacebookPage": False
+            "searchLimit": 1,
+            "searchType": "hashtag"
         }
         
         try:
@@ -144,10 +155,15 @@ class ApifyInstagramScraper:
         logger.info(f"Getting profile info for @{username}")
         
         actor_input = {
-            "usernames": [username],
+            "addParentData": False,
+            "directUrls": [f"https://www.instagram.com/{username}/"],
+            "enhanceUserSearchWithFacebookPage": False,
+            "isUserReelFeedURL": False,
+            "isUserTaggedFeedURL": False,
+            "resultsLimit": 1,
             "resultsType": "details",
-            "searchType": "user",
-            "addParentData": True
+            "searchLimit": 1,
+            "searchType": "hashtag"
         }
         
         try:
@@ -155,6 +171,12 @@ class ApifyInstagramScraper:
             run_id = run_response['data']['id']
             
             results = self._wait_for_completion(run_id)
+            
+            # Debug: Log what we actually received
+            logger.info(f"Received {len(results)} items from Apify for profile @{username}")
+            if results:
+                logger.info(f"First item keys: {list(results[0].keys()) if results[0] else 'Empty item'}")
+                logger.info(f"First item sample: {str(results[0])[:500]}...")
             
             # Find user profile in results
             for item in results:
@@ -241,21 +263,22 @@ class ApifyInstagramScraper:
             Formatted post dictionary or None if invalid
         """
         try:
-            # Extract basic post data
+            # Extract basic post data (based on actual Apify output format)
             post_id = item.get('id', '')
-            shortcode = item.get('shortCode', '')
+            shortcode = item.get('shortCode', '')  # Note: Apify uses 'shortCode' not 'shortcode'
             caption = item.get('caption', '')
             
-            # Get the best image URL
-            image_url = ''
-            if item.get('displayUrl'):
-                image_url = item['displayUrl']
-            elif item.get('images') and len(item['images']) > 0:
-                # Get highest resolution image
-                images = sorted(item['images'], key=lambda x: x.get('width', 0) * x.get('height', 0), reverse=True)
-                image_url = images[0].get('url', '')
+            # Get the image URL (Apify provides displayUrl directly)
+            image_url = item.get('displayUrl', '')
             
-            # Parse timestamp
+            # Handle video posts
+            is_video = item.get('type', '').lower() == 'video'
+            if is_video and item.get('videoUrl'):
+                # For videos, we might want to use the video URL or thumbnail
+                # For now, we'll use displayUrl as thumbnail and note it's a video
+                pass
+            
+            # Parse timestamp (Apify format: "2025-10-20T14:54:06.000Z")
             timestamp = 0
             date_posted = ''
             if item.get('timestamp'):
@@ -264,41 +287,58 @@ class ApifyInstagramScraper:
                     dt = datetime.fromisoformat(item['timestamp'].replace('Z', '+00:00'))
                     timestamp = int(dt.timestamp())
                     date_posted = dt.strftime('%Y-%m-%d %H:%M:%S')
-                except:
+                except Exception as e:
+                    logger.warning(f"Error parsing timestamp {item.get('timestamp')}: {e}")
                     timestamp = int(time.time())
                     date_posted = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             
-            # Extract hashtags from caption
-            hashtags = []
-            if caption:
-                import re
-                hashtags = re.findall(r'#(\w+)', caption)
+            # Extract hashtags (Apify provides them directly in the hashtags array)
+            hashtags = item.get('hashtags', [])
             
-            # Build post URL
-            post_url = f"https://www.instagram.com/p/{shortcode}/" if shortcode else item.get('url', '')
+            # Build post URL (Apify provides this directly)
+            post_url = item.get('url', '')
+            
+            # Get owner information
+            owner_username = item.get('ownerUsername', username)
+            owner_full_name = item.get('ownerFullName', '')
             
             formatted_post = {
                 'id': post_id,
                 'shortcode': shortcode,
-                'username': username,
+                'username': owner_username,
                 'caption': caption,
                 'image_url': image_url,
                 'post_url': post_url,
                 'timestamp': timestamp,
                 'date_posted': date_posted,
                 'hashtags': hashtags,
-                'media_type': item.get('type', 'IMAGE').upper(),
-                'is_video': item.get('isVideo', False),
+                'media_type': item.get('type', 'Image').upper(),
+                'is_video': is_video,
                 'likes_count': item.get('likesCount', 0),
                 'comments_count': item.get('commentsCount', 0),
+                'owner_full_name': owner_full_name,
+                'dimensions_height': item.get('dimensionsHeight', 0),
+                'dimensions_width': item.get('dimensionsWidth', 0),
+                'location_name': item.get('locationName', ''),
+                'alt_text': item.get('alt', ''),
                 'extraction_method': 'apify_scraper',
                 'raw_data': item  # Store original data for debugging
             }
+            
+            # Add video-specific data if it's a video
+            if is_video:
+                formatted_post.update({
+                    'video_url': item.get('videoUrl', ''),
+                    'video_view_count': item.get('videoViewCount', 0),
+                    'video_play_count': item.get('videoPlayCount', 0),
+                    'video_duration': item.get('videoDuration', 0)
+                })
             
             return formatted_post
             
         except Exception as e:
             logger.error(f"Error formatting post data: {str(e)}")
+            logger.error(f"Item data: {str(item)[:500]}...")
             return None
     
     def _extract_username_from_url(self, url: str) -> str:
@@ -333,6 +373,59 @@ class ApifyInstagramScraper:
         except Exception as e:
             logger.error(f"Error getting usage info: {str(e)}")
             return {}
+    
+    def find_instagram_actors(self) -> List[Dict]:
+        """
+        Find available Instagram-related actors
+        
+        Returns:
+            List of actor information
+        """
+        try:
+            url = f"{self.base_url}/store"
+            params = {
+                'search': 'instagram',
+                'category': 'SOCIAL_MEDIA'
+            }
+            response = self.session.get(url, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            actors = data.get('data', {}).get('items', [])
+            
+            instagram_actors = []
+            for actor in actors:
+                if 'instagram' in actor.get('name', '').lower():
+                    instagram_actors.append({
+                        'id': actor.get('id'),
+                        'name': actor.get('name'),
+                        'username': actor.get('username'),
+                        'title': actor.get('title'),
+                        'description': actor.get('description', '')[:100]
+                    })
+            
+            return instagram_actors
+            
+        except Exception as e:
+            logger.error(f"Error finding Instagram actors: {str(e)}")
+            return []
+    
+    def test_actor_availability(self, actor_id: str) -> bool:
+        """
+        Test if an actor ID is available and accessible
+        
+        Args:
+            actor_id: Actor ID to test
+            
+        Returns:
+            True if actor is available, False otherwise
+        """
+        try:
+            url = f"{self.base_url}/acts/{actor_id}"
+            response = self.session.get(url)
+            return response.status_code == 200
+        except:
+            return False
 
 class ApifyInstagramManager:
     """
