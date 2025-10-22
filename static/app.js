@@ -580,6 +580,22 @@ async function handleComplexAction(action) {
             case 'sample_import':
                 await sampleInstagramImport();
                 break;
+            // Apify Instagram actions
+            case 'apify_status':
+                await checkApifyStatus();
+                break;
+            case 'apify_scrape_user':
+                await scrapeInstagramUser(action.username, action.limit || 20);
+                break;
+            case 'apify_bulk_import':
+                await bulkImportInstagramUser(action.username, action.limit || 10);
+                break;
+            case 'apify_scrape_urls':
+                await scrapeInstagramUrls(action.urls);
+                break;
+            case 'apify_profile':
+                await getInstagramProfile(action.username);
+                break;
             // Instagram OAuth actions - COMMENTED OUT (using manual import instead)
             // case 'instagram_login':
             //     window.location.href = action.url || '/auth/instagram';
@@ -663,6 +679,167 @@ async function sampleInstagramImport() {
     ];
     
     addChatMessage('system', '🧪 This would import sample posts from @cardmyyard_oviedo. Replace with real Instagram URLs to test.');
+}
+
+// Apify Instagram Integration Functions
+async function checkApifyStatus() {
+    try {
+        addChatMessage('system', '🔍 Checking Apify integration status...');
+        
+        const response = await apiCall('/api/instagram/apify/status');
+        
+        if (response.available) {
+            const usage = response.usage_info;
+            let message = '✅ Apify integration is ready!';
+            if (usage && usage.plan) {
+                message += ` Plan: ${usage.plan}`;
+            }
+            addChatMessage('system', message);
+        } else {
+            addChatMessage('system', '❌ Apify not configured. Set APIFY_API_TOKEN in environment variables.');
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Error checking Apify status: ${error.message}`);
+    }
+}
+
+async function scrapeInstagramUser(username, limit = 20) {
+    try {
+        addChatMessage('system', `🔄 Scraping @${username} via Apify (limit: ${limit})...`);
+        
+        const response = await apiCall('/api/instagram/apify/scrape-user', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                username: username,
+                limit: limit 
+            })
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ Scraped ${response.posts_count} posts from @${username}`);
+            
+            // Show option to import to WordPress
+            const importBtn = document.createElement('button');
+            importBtn.className = 'chat-action-btn';
+            importBtn.textContent = 'Import to WordPress';
+            importBtn.onclick = () => importApifyPostsToWordPress(response.posts);
+            
+            const container = document.getElementById('chat-container');
+            const lastMessage = container.lastElementChild;
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'chat-actions';
+            actionsDiv.appendChild(importBtn);
+            lastMessage.appendChild(actionsDiv);
+            
+            return response.posts;
+        } else {
+            addChatMessage('system', `❌ Scraping failed: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Scraping failed: ${error.message}`);
+    }
+}
+
+async function bulkImportInstagramUser(username, limit = 10) {
+    try {
+        addChatMessage('system', `🚀 Bulk importing @${username} via Apify (limit: ${limit})...`);
+        
+        const response = await apiCall('/api/instagram/apify/bulk-import', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                username: username,
+                limit: limit 
+            })
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `🎉 Successfully imported ${response.imported_count} of ${response.scraped_count} posts from @${username} to WordPress!`);
+            loadPosts(); // Refresh the posts list
+        } else {
+            addChatMessage('system', `❌ Bulk import failed: ${response.error || 'Unknown error'}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Bulk import failed: ${error.message}`);
+    }
+}
+
+async function scrapeInstagramUrls(urls) {
+    try {
+        addChatMessage('system', `🔄 Scraping ${urls.length} Instagram URLs via Apify...`);
+        
+        const response = await apiCall('/api/instagram/apify/scrape-urls', {
+            method: 'POST',
+            body: JSON.stringify({ urls: urls })
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ Scraped ${response.posts_count} posts from ${response.urls_count} URLs`);
+            
+            // Show option to import to WordPress
+            const importBtn = document.createElement('button');
+            importBtn.className = 'chat-action-btn';
+            importBtn.textContent = 'Import to WordPress';
+            importBtn.onclick = () => importApifyPostsToWordPress(response.posts);
+            
+            const container = document.getElementById('chat-container');
+            const lastMessage = container.lastElementChild;
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'chat-actions';
+            actionsDiv.appendChild(importBtn);
+            lastMessage.appendChild(actionsDiv);
+            
+            return response.posts;
+        } else {
+            addChatMessage('system', `❌ URL scraping failed: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ URL scraping failed: ${error.message}`);
+    }
+}
+
+async function importApifyPostsToWordPress(posts) {
+    try {
+        addChatMessage('system', `📥 Importing ${posts.length} Apify posts to WordPress...`);
+        
+        const response = await apiCall('/api/instagram/apify/import-to-wordpress', {
+            method: 'POST',
+            body: JSON.stringify({ posts: posts })
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `🎉 Successfully imported ${response.imported_count} of ${response.total_posts} posts to WordPress as drafts!`);
+            loadPosts(); // Refresh the posts list
+        } else {
+            addChatMessage('system', `❌ WordPress import failed: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ WordPress import failed: ${error.message}`);
+    }
+}
+
+async function getInstagramProfile(username) {
+    try {
+        addChatMessage('system', `👤 Getting profile info for @${username}...`);
+        
+        const response = await apiCall(`/api/instagram/apify/profile/${username}`);
+        
+        if (response.success && response.profile) {
+            const profile = response.profile;
+            let message = `✅ Profile found for @${username}:\n`;
+            message += `• Full name: ${profile.full_name || 'N/A'}\n`;
+            message += `• Followers: ${profile.followers_count || 'N/A'}\n`;
+            message += `• Following: ${profile.following_count || 'N/A'}\n`;
+            message += `• Posts: ${profile.posts_count || 'N/A'}\n`;
+            message += `• Verified: ${profile.is_verified ? 'Yes' : 'No'}\n`;
+            message += `• Private: ${profile.is_private ? 'Yes' : 'No'}`;
+            
+            addChatMessage('system', message);
+        } else {
+            addChatMessage('system', `❌ Profile not found for @${username}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Error getting profile: ${error.message}`);
+    }
 }
 
 // Instagram OAuth functions - COMMENTED OUT (using manual import instead)

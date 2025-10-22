@@ -18,6 +18,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 from src.integrations.instagram.manual_import import InstagramManualImport
+from src.integrations.instagram.apify_scraper import ApifyInstagramScraper, ApifyInstagramManager
 # from src.integrations.instagram.oauth import InstagramOAuth, InstagramTokenManager  # Commented out - using manual import instead
 
 # Configure logging
@@ -457,9 +458,29 @@ app.secret_key = SECRET_KEY
 # Initialize MCP client
 mcp_client = WordPressMCPClient(WORDPRESS_URL, ACCESS_TOKEN)
 
+# Store MCP client in app config for blueprint access
+app.config['mcp_client'] = mcp_client
+
+# Initialize Apify Instagram integration
+APIFY_API_TOKEN = os.environ.get('APIFY_API_TOKEN')
+apify_manager = None
+
+if APIFY_API_TOKEN:
+    apify_manager = ApifyInstagramManager(APIFY_API_TOKEN, mcp_client)
+    logger.info("✅ Apify Instagram integration configured")
+else:
+    logger.warning("⚠️ Apify not configured - set APIFY_API_TOKEN for professional Instagram scraping")
+
+# Store apify_manager in app config for blueprint access
+app.config['apify_manager'] = apify_manager
+
 # Initialize chat handler
 from src.core.chat_handler import WordPressChatHandler
 chat_handler = WordPressChatHandler(mcp_client)
+
+# Register Instagram API routes
+from src.api.instagram_routes import instagram_bp
+app.register_blueprint(instagram_bp)
 
 # Routes
 @app.route('/')
@@ -1260,6 +1281,141 @@ def import_instagram_to_wordpress():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Apify Instagram Integration Routes
+@app.route('/api/instagram/apify/scrape-user', methods=['POST'])
+def apify_scrape_user():
+    """Scrape Instagram user posts via Apify"""
+    if not apify_manager:
+        return jsonify({'error': 'Apify integration not configured'}), 500
+    
+    try:
+        data = request.json
+        username = data.get('username', '').replace('@', '')
+        limit = data.get('limit', 20)
+        
+        if not username:
+            return jsonify({'error': 'Username is required'}), 400
+        
+        posts = apify_manager.scraper.scrape_user_posts(username, limit)
+        
+        return jsonify({
+            'success': True,
+            'username': username,
+            'posts_count': len(posts),
+            'posts': posts
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/instagram/apify/scrape-urls', methods=['POST'])
+def apify_scrape_urls():
+    """Scrape specific Instagram posts via Apify"""
+    if not apify_manager:
+        return jsonify({'error': 'Apify integration not configured'}), 500
+    
+    try:
+        data = request.json
+        urls = data.get('urls', [])
+        
+        if not urls:
+            return jsonify({'error': 'URLs are required'}), 400
+        
+        posts = apify_manager.scraper.scrape_post_urls(urls)
+        
+        return jsonify({
+            'success': True,
+            'urls_count': len(urls),
+            'posts_count': len(posts),
+            'posts': posts
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/instagram/apify/import-user', methods=['POST'])
+def apify_import_user_to_wordpress():
+    """Import Instagram user posts directly to WordPress via Apify"""
+    if not apify_manager:
+        return jsonify({'error': 'Apify integration not configured'}), 500
+    
+    try:
+        data = request.json
+        username = data.get('username', '').replace('@', '')
+        limit = data.get('limit', 10)
+        auto_publish = data.get('auto_publish', False)
+        
+        if not username:
+            return jsonify({'error': 'Username is required'}), 400
+        
+        result = apify_manager.import_user_posts_to_wordpress(
+            username, limit, auto_publish
+        )
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/instagram/apify/profile', methods=['GET'])
+def apify_get_profile():
+    """Get Instagram user profile via Apify"""
+    if not apify_manager:
+        return jsonify({'error': 'Apify integration not configured'}), 500
+    
+    try:
+        username = request.args.get('username', '').replace('@', '')
+        
+        if not username:
+            return jsonify({'error': 'Username is required'}), 400
+        
+        profile = apify_manager.scraper.get_user_profile(username)
+        
+        return jsonify({
+            'success': True,
+            'profile': profile
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/instagram/apify/cost-estimate', methods=['POST'])
+def apify_cost_estimate():
+    """Estimate cost for Apify operation"""
+    if not apify_manager:
+        return jsonify({'error': 'Apify integration not configured'}), 500
+    
+    try:
+        data = request.json
+        operation_type = data.get('operation_type', 'user_posts')
+        count = data.get('count', 10)
+        
+        estimate = apify_manager.scraper.estimate_cost(operation_type, count)
+        
+        return jsonify({
+            'success': True,
+            'estimate': estimate
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/instagram/apify/status')
+def apify_status():
+    """Check Apify integration status"""
+    return jsonify({
+        'configured': apify_manager is not None,
+        'api_token_set': bool(APIFY_API_TOKEN),
+        'features': [
+            'Professional Instagram scraping',
+            'Bulk user post import',
+            'URL-based post scraping',
+            'Profile information extraction',
+            'Cost estimation',
+            'Direct WordPress integration'
+        ] if apify_manager else []
+    })
 
 # @app.route('/api/instagram/import-authenticated', methods=['POST'])
 # def import_authenticated_instagram():

@@ -184,6 +184,27 @@ class WordPressChatHandler:
         if 'instagram help' in message or 'instagram commands' in message:
             return 'instagram_help', {}
         
+        # Apify Instagram commands
+        if 'apify status' in message or 'check apify' in message:
+            return 'apify_status', {}
+        
+        if 'scrape instagram' in message or 'apify scrape' in message:
+            # Extract username from message
+            username = self._extract_instagram_username(message)
+            limit = self._extract_number(message) or 20
+            
+            if 'bulk import' in message or 'import to wordpress' in message:
+                return 'apify_bulk_import', {'username': username, 'limit': limit}
+            else:
+                return 'apify_scrape_user', {'username': username, 'limit': limit}
+        
+        if 'instagram profile' in message and ('get' in message or 'show' in message or 'check' in message):
+            username = self._extract_instagram_username(message)
+            return 'apify_profile', {'username': username}
+        
+        if 'apify help' in message or 'apify commands' in message:
+            return 'apify_help', {}
+        
         # Default: treat as general question or request for clarification
         return 'general', {'message': message}
     
@@ -237,6 +258,22 @@ class WordPressChatHandler:
         
         elif intent == 'instagram_help':
             return self._instagram_help_response()
+        
+        # Apify Instagram actions
+        elif intent == 'apify_status':
+            return self._apify_status_response()
+        
+        elif intent == 'apify_scrape_user':
+            return self._apify_scrape_user_response(params)
+        
+        elif intent == 'apify_bulk_import':
+            return self._apify_bulk_import_response(params)
+        
+        elif intent == 'apify_profile':
+            return self._apify_profile_response(params)
+        
+        elif intent == 'apify_help':
+            return self._apify_help_response()
         
         # Instagram OAuth actions - COMMENTED OUT (using manual import instead)
         # elif intent == 'instagram_connect':
@@ -370,6 +407,16 @@ class WordPressChatHandler:
                         "import instagram post [URL]",
                         "import instagram posts [URL1] [URL2]",
                         "instagram help"
+                    ]
+                },
+                {
+                    'category': 'Apify Instagram (Professional)',
+                    'commands': [
+                        "apify status",
+                        "scrape instagram @username",
+                        "bulk import @username",
+                        "instagram profile @username",
+                        "apify help"
                     ]
                 }
             ]
@@ -949,6 +996,29 @@ Summary and final thoughts on {topic}...
         instagram_urls = [url for url in urls if 'instagram.com' in url]
         return instagram_urls if instagram_urls else urls
     
+    def _extract_instagram_username(self, message: str) -> Optional[str]:
+        """Extract Instagram username from message"""
+        # Look for @username pattern
+        username_match = re.search(r'@([a-zA-Z0-9._]+)', message)
+        if username_match:
+            return username_match.group(1)
+        
+        # Look for common username patterns
+        patterns = [
+            r'user\s+([a-zA-Z0-9._]+)',
+            r'username\s+([a-zA-Z0-9._]+)',
+            r'account\s+([a-zA-Z0-9._]+)',
+            r'scrape\s+([a-zA-Z0-9._]+)',
+            r'profile\s+([a-zA-Z0-9._]+)'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, message, re.IGNORECASE)
+            if match:
+                return match.group(1)
+        
+        return None
+    
     # New response methods for additional WordPress functions
     def _create_user_help_response(self) -> Dict[str, Any]:
         """Provide user creation help"""
@@ -1314,3 +1384,181 @@ Summary and final thoughts on {topic}...
                 'type': 'error',
                 'message': f"❌ Failed to get post meta: {str(e)}"
             }
+    
+    # Apify Instagram Integration Response Methods
+    def _apify_status_response(self) -> Dict[str, Any]:
+        """Check Apify integration status"""
+        return {
+            'type': 'apify_status_check',
+            'message': "Checking Apify Instagram scraper status...",
+            'actions': [
+                {
+                    'type': 'apify_status',
+                    'label': '🔍 Check Apify Status'
+                }
+            ],
+            'suggestions': [
+                "Apify provides professional Instagram scraping",
+                "Get your API token from console.apify.com",
+                "More reliable than manual scraping methods"
+            ]
+        }
+    
+    def _apify_scrape_user_response(self, params: Dict) -> Dict[str, Any]:
+        """Scrape Instagram user posts via Apify"""
+        username = params.get('username')
+        limit = params.get('limit', 20)
+        
+        if not username:
+            return {
+                'type': 'question',
+                'message': "Which Instagram username would you like to scrape?",
+                'suggestions': [
+                    "scrape instagram @cardmyyard_oviedo",
+                    "scrape instagram user cardmyyard_oviedo",
+                    "Try with any public Instagram account"
+                ]
+            }
+        
+        return {
+            'type': 'apify_scrape',
+            'message': f"Scrape @{username} via Apify (limit: {limit} posts)?",
+            'features': [
+                f"🔍 Professional scraping of @{username}",
+                f"📱 Up to {limit} recent posts",
+                "🖼️ High-quality images and engagement data",
+                "📊 Likes, comments, and hashtag extraction",
+                "⚡ Fast and reliable scraping"
+            ],
+            'actions': [
+                {
+                    'type': 'apify_scrape_user',
+                    'label': f'🔍 Scrape @{username}',
+                    'username': username,
+                    'limit': limit
+                }
+            ],
+            'suggestions': [
+                "Scraped posts can be imported to WordPress",
+                "All data includes engagement metrics",
+                "Works with any public Instagram account"
+            ]
+        }
+    
+    def _apify_bulk_import_response(self, params: Dict) -> Dict[str, Any]:
+        """Bulk import Instagram user posts via Apify"""
+        username = params.get('username')
+        limit = params.get('limit', 10)
+        
+        if not username:
+            return {
+                'type': 'question',
+                'message': "Which Instagram username would you like to bulk import?",
+                'suggestions': [
+                    "bulk import @cardmyyard_oviedo",
+                    "scrape and import cardmyyard_oviedo",
+                    "Try with any public Instagram account"
+                ]
+            }
+        
+        return {
+            'type': 'apify_bulk_import',
+            'message': f"Bulk import @{username} to WordPress via Apify?",
+            'process': [
+                f"1️⃣ Scrape {limit} recent posts from @{username}",
+                "2️⃣ Download high-quality images",
+                "3️⃣ Create WordPress draft posts",
+                "4️⃣ Add engagement metrics and metadata",
+                "5️⃣ Set featured images automatically"
+            ],
+            'actions': [
+                {
+                    'type': 'apify_bulk_import',
+                    'label': f'🚀 Bulk Import @{username}',
+                    'username': username,
+                    'limit': limit
+                }
+            ],
+            'suggestions': [
+                "All posts will be created as drafts",
+                "Images uploaded to WordPress media library",
+                "Includes likes, comments, and hashtags"
+            ]
+        }
+    
+    def _apify_profile_response(self, params: Dict) -> Dict[str, Any]:
+        """Get Instagram profile info via Apify"""
+        username = params.get('username')
+        
+        if not username:
+            return {
+                'type': 'question',
+                'message': "Which Instagram profile would you like to check?",
+                'suggestions': [
+                    "instagram profile @cardmyyard_oviedo",
+                    "get profile cardmyyard_oviedo",
+                    "check instagram account cardmyyard_oviedo"
+                ]
+            }
+        
+        return {
+            'type': 'apify_profile',
+            'message': f"Get profile information for @{username}?",
+            'info': [
+                "👤 Full name and bio",
+                "📊 Follower and following counts",
+                "📱 Total posts count",
+                "✅ Verification status",
+                "🔒 Privacy status"
+            ],
+            'actions': [
+                {
+                    'type': 'apify_profile',
+                    'label': f'👤 Get @{username} Profile',
+                    'username': username
+                }
+            ],
+            'suggestions': [
+                "Profile data helps plan content strategy",
+                "Check account status before scraping",
+                "Works with any public Instagram account"
+            ]
+        }
+    
+    def _apify_help_response(self) -> Dict[str, Any]:
+        """Provide Apify integration help"""
+        return {
+            'type': 'help',
+            'message': "Apify Instagram Integration Commands:",
+            'commands': [
+                "🔍 **Check Status**: 'apify status' or 'check apify'",
+                "📱 **Scrape User**: 'scrape instagram @username' or 'apify scrape username'",
+                "🚀 **Bulk Import**: 'bulk import @username' or 'scrape and import username'",
+                "👤 **Get Profile**: 'instagram profile @username' or 'get profile username'",
+                "❓ **Get Help**: 'apify help' or 'apify commands'"
+            ],
+            'features': [
+                "✅ Professional Instagram scraping service",
+                "✅ High-quality images and engagement data",
+                "✅ Bulk operations with rate limiting",
+                "✅ Direct WordPress integration",
+                "✅ Reliable and maintained by Apify"
+            ],
+            'setup': [
+                "1️⃣ Get API token from console.apify.com",
+                "2️⃣ Set APIFY_API_TOKEN environment variable",
+                "3️⃣ Restart the application",
+                "4️⃣ Use 'apify status' to verify setup"
+            ],
+            'actions': [
+                {
+                    'type': 'apify_status',
+                    'label': '🔍 Check Apify Status'
+                }
+            ],
+            'suggestions': [
+                "Apify is more reliable than manual scraping",
+                "Includes engagement metrics and metadata",
+                "Professional service with proper rate limiting"
+            ]
+        }
