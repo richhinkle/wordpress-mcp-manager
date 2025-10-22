@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "aiwu-wordpress": {
+      "command": "python",
+      "args": [
+        "wordpress_mcp_server.py"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
