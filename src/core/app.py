@@ -463,11 +463,12 @@ app.config['mcp_client'] = mcp_client
 
 # Initialize Apify Instagram integration
 APIFY_API_TOKEN = os.environ.get('APIFY_API_TOKEN')
+APIFY_CACHE_TTL = int(os.environ.get('APIFY_CACHE_TTL', 3600))  # Default 1 hour
 apify_manager = None
 
 if APIFY_API_TOKEN:
-    apify_manager = ApifyInstagramManager(APIFY_API_TOKEN, mcp_client)
-    logger.info("✅ Apify Instagram integration configured")
+    apify_manager = ApifyInstagramManager(APIFY_API_TOKEN, mcp_client, cache_ttl=APIFY_CACHE_TTL)
+    logger.info(f"✅ Apify Instagram integration configured with {APIFY_CACHE_TTL}s cache TTL")
 else:
     logger.warning("⚠️ Apify not configured - set APIFY_API_TOKEN for professional Instagram scraping")
 

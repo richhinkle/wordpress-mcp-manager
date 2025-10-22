@@ -340,10 +340,12 @@ class ApifyInstagramManager:
     Combines scraping and WordPress import functionality
     """
     
-    def __init__(self, api_token: str, mcp_client):
-        self.scraper = ApifyInstagramScraper(api_token)
+    def __init__(self, api_token: str, mcp_client, cache_ttl: int = 3600):
+        from .apify_cache import CachedApifyInstagramScraper
+        
+        self.scraper = CachedApifyInstagramScraper(api_token, cache_ttl)
         self.mcp_client = mcp_client
-        logger.info("ApifyInstagramManager initialized")
+        logger.info("ApifyInstagramManager initialized with caching")
     
     def import_user_posts_to_wordpress(self, username: str, limit: int = 10, auto_publish: bool = False) -> Dict:
         """

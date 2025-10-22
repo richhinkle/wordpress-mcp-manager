@@ -30,10 +30,13 @@ def apify_status():
     
     try:
         usage_info = apify_manager.scraper.get_usage_info()
+        cache_stats = apify_manager.scraper.get_cache_stats()
+        
         return jsonify({
             'available': True,
             'usage_info': usage_info,
-            'message': 'Apify integration ready'
+            'cache_stats': cache_stats,
+            'message': 'Apify integration ready with caching'
         })
     except Exception as e:
         return jsonify({
@@ -287,4 +290,135 @@ def bulk_import_user():
         
     except Exception as e:
         logger.error(f"Error in bulk import: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/cache/stats')
+def get_cache_stats():
+    """Get cache statistics"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        stats = apify_manager.scraper.get_cache_stats()
+        return jsonify({
+            'success': True,
+            'cache_stats': stats
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/cache/clear-expired', methods=['POST'])
+def clear_expired_cache():
+    """Clear expired cache entries"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        removed_count = apify_manager.scraper.clear_expired_cache()
+        return jsonify({
+            'success': True,
+            'removed_count': removed_count,
+            'message': f'Cleared {removed_count} expired cache entries'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/cache/clear-user/<username>', methods=['POST'])
+def clear_user_cache(username):
+    """Clear cache for specific user"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        username = username.replace('@', '')
+        removed_count = apify_manager.scraper.clear_cache_for_user(username)
+        return jsonify({
+            'success': True,
+            'removed_count': removed_count,
+            'message': f'Cleared {removed_count} cache entries for @{username}'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/cache/clear-all', methods=['POST'])
+def clear_all_cache():
+    """Clear all cache entries"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        removed_count = apify_manager.scraper.cache.clear_all()
+        return jsonify({
+            'success': True,
+            'removed_count': removed_count,
+            'message': f'Cleared all cache: {removed_count} entries removed'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@instagram_bp.route('/apify/test-cache/<username>')
+def test_cache_behavior(username):
+    """Test endpoint to demonstrate cache behavior"""
+    from flask import current_app
+    apify_manager = current_app.config.get('apify_manager')
+    
+    if not apify_manager:
+        return jsonify({'error': 'Apify not configured'}), 400
+    
+    try:
+        import time
+        username = username.replace('@', '')
+        
+        # First request - should hit API
+        start_time = time.time()
+        profile1 = apify_manager.scraper.get_user_profile(username, use_cache=True)
+        first_duration = time.time() - start_time
+        
+        # Second request - should hit cache
+        start_time = time.time()
+        profile2 = apify_manager.scraper.get_user_profile(username, use_cache=True)
+        second_duration = time.time() - start_time
+        
+        # Third request - bypass cache
+        start_time = time.time()
+        profile3 = apify_manager.scraper.get_user_profile(username, use_cache=False)
+        third_duration = time.time() - start_time
+        
+        return jsonify({
+            'success': True,
+            'username': username,
+            'test_results': {
+                'first_request': {
+                    'duration_seconds': round(first_duration, 3),
+                    'source': 'API (cache miss)',
+                    'profile_found': bool(profile1)
+                },
+                'second_request': {
+                    'duration_seconds': round(second_duration, 3),
+                    'source': 'Cache (should be much faster)',
+                    'profile_found': bool(profile2)
+                },
+                'third_request': {
+                    'duration_seconds': round(third_duration, 3),
+                    'source': 'API (cache bypassed)',
+                    'profile_found': bool(profile3)
+                }
+            },
+            'cache_stats': apify_manager.scraper.get_cache_stats(),
+            'message': f'Cache test completed for @{username}. Second request should be much faster than first/third.'
+        })
+        
+    except Exception as e:
         return jsonify({'error': str(e)}), 500

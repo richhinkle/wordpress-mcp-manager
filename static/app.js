@@ -596,6 +596,18 @@ async function handleComplexAction(action) {
             case 'apify_profile':
                 await getInstagramProfile(action.username);
                 break;
+            case 'cache_stats':
+                await getCacheStats();
+                break;
+            case 'clear_expired_cache':
+                await clearExpiredCache();
+                break;
+            case 'clear_user_cache':
+                await clearUserCache(action.username);
+                break;
+            case 'clear_all_cache':
+                await clearAllCache();
+                break;
             // Instagram OAuth actions - COMMENTED OUT (using manual import instead)
             // case 'instagram_login':
             //     window.location.href = action.url || '/auth/instagram';
@@ -839,6 +851,104 @@ async function getInstagramProfile(username) {
         }
     } catch (error) {
         addChatMessage('system', `❌ Error getting profile: ${error.message}`);
+    }
+}
+
+// Cache Management Functions
+async function getCacheStats() {
+    try {
+        addChatMessage('system', '📊 Getting cache statistics...');
+        
+        const response = await apiCall('/api/instagram/apify/cache/stats');
+        
+        if (response.success) {
+            const stats = response.cache_stats;
+            let message = '📊 Cache Statistics:\n';
+            message += `• Total files: ${stats.total_files}\n`;
+            message += `• Total size: ${(stats.total_size_bytes / 1024).toFixed(1)} KB\n`;
+            
+            if (stats.oldest_entry) {
+                message += `• Oldest entry: ${new Date(stats.oldest_entry).toLocaleString()}\n`;
+            }
+            if (stats.newest_entry) {
+                message += `• Newest entry: ${new Date(stats.newest_entry).toLocaleString()}\n`;
+            }
+            
+            if (stats.by_operation && Object.keys(stats.by_operation).length > 0) {
+                message += '\n📁 By operation:\n';
+                for (const [operation, opStats] of Object.entries(stats.by_operation)) {
+                    message += `• ${operation}: ${opStats.files} files (${(opStats.size_bytes / 1024).toFixed(1)} KB)`;
+                    if (opStats.expired > 0) {
+                        message += ` - ${opStats.expired} expired`;
+                    }
+                    message += '\n';
+                }
+            }
+            
+            addChatMessage('system', message);
+        } else {
+            addChatMessage('system', `❌ Error getting cache stats: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Error getting cache stats: ${error.message}`);
+    }
+}
+
+async function clearExpiredCache() {
+    try {
+        addChatMessage('system', '🧹 Clearing expired cache entries...');
+        
+        const response = await apiCall('/api/instagram/apify/cache/clear-expired', {
+            method: 'POST'
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ ${response.message}`);
+        } else {
+            addChatMessage('system', `❌ Error clearing cache: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Error clearing cache: ${error.message}`);
+    }
+}
+
+async function clearUserCache(username) {
+    try {
+        addChatMessage('system', `🧹 Clearing cache for @${username}...`);
+        
+        const response = await apiCall(`/api/instagram/apify/cache/clear-user/${username}`, {
+            method: 'POST'
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ ${response.message}`);
+        } else {
+            addChatMessage('system', `❌ Error clearing user cache: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Error clearing user cache: ${error.message}`);
+    }
+}
+
+async function clearAllCache() {
+    if (!confirm('Clear ALL cached Apify data? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        addChatMessage('system', '🧹 Clearing all cache entries...');
+        
+        const response = await apiCall('/api/instagram/apify/cache/clear-all', {
+            method: 'POST'
+        });
+        
+        if (response.success) {
+            addChatMessage('system', `✅ ${response.message}`);
+        } else {
+            addChatMessage('system', `❌ Error clearing all cache: ${response.error}`);
+        }
+    } catch (error) {
+        addChatMessage('system', `❌ Error clearing all cache: ${error.message}`);
     }
 }
 

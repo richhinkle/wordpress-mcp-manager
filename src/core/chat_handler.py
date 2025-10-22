@@ -205,6 +205,23 @@ class WordPressChatHandler:
         if 'apify help' in message or 'apify commands' in message:
             return 'apify_help', {}
         
+        # Cache management commands
+        if 'cache stats' in message or 'cache statistics' in message:
+            return 'cache_stats', {}
+        
+        if 'clear cache' in message:
+            if 'expired' in message:
+                return 'clear_expired_cache', {}
+            elif 'all' in message:
+                return 'clear_all_cache', {}
+            else:
+                # Check for username
+                username = self._extract_instagram_username(message)
+                if username:
+                    return 'clear_user_cache', {'username': username}
+                else:
+                    return 'clear_cache_help', {}
+        
         # Default: treat as general question or request for clarification
         return 'general', {'message': message}
     
@@ -274,6 +291,22 @@ class WordPressChatHandler:
         
         elif intent == 'apify_help':
             return self._apify_help_response()
+        
+        # Cache management actions
+        elif intent == 'cache_stats':
+            return self._cache_stats_response()
+        
+        elif intent == 'clear_expired_cache':
+            return self._clear_expired_cache_response()
+        
+        elif intent == 'clear_user_cache':
+            return self._clear_user_cache_response(params)
+        
+        elif intent == 'clear_all_cache':
+            return self._clear_all_cache_response()
+        
+        elif intent == 'clear_cache_help':
+            return self._clear_cache_help_response()
         
         # Instagram OAuth actions - COMMENTED OUT (using manual import instead)
         # elif intent == 'instagram_connect':
@@ -417,6 +450,15 @@ class WordPressChatHandler:
                         "bulk import @username",
                         "instagram profile @username",
                         "apify help"
+                    ]
+                },
+                {
+                    'category': 'Cache Management',
+                    'commands': [
+                        "cache stats",
+                        "clear expired cache",
+                        "clear cache @username",
+                        "clear all cache"
                     ]
                 }
             ]
@@ -1560,5 +1602,138 @@ Summary and final thoughts on {topic}...
                 "Apify is more reliable than manual scraping",
                 "Includes engagement metrics and metadata",
                 "Professional service with proper rate limiting"
+            ]
+        }
+    
+    # Cache Management Response Methods
+    def _cache_stats_response(self) -> Dict[str, Any]:
+        """Get cache statistics"""
+        return {
+            'type': 'cache_stats',
+            'message': "Getting Apify cache statistics...",
+            'actions': [
+                {
+                    'type': 'cache_stats',
+                    'label': '📊 Get Cache Stats'
+                }
+            ],
+            'suggestions': [
+                "Cache helps reduce API costs",
+                "Results are stored locally for faster access",
+                "Use 'clear expired cache' to clean up old data"
+            ]
+        }
+    
+    def _clear_expired_cache_response(self) -> Dict[str, Any]:
+        """Clear expired cache entries"""
+        return {
+            'type': 'clear_expired_cache',
+            'message': "Clear expired cache entries to free up space?",
+            'actions': [
+                {
+                    'type': 'clear_expired_cache',
+                    'label': '🧹 Clear Expired Cache'
+                }
+            ],
+            'suggestions': [
+                "This removes only expired entries",
+                "Fresh cache entries will be preserved",
+                "Helps keep cache size manageable"
+            ]
+        }
+    
+    def _clear_user_cache_response(self, params: Dict) -> Dict[str, Any]:
+        """Clear cache for specific user"""
+        username = params.get('username')
+        
+        if not username:
+            return {
+                'type': 'question',
+                'message': "Which user's cache would you like to clear?",
+                'suggestions': [
+                    "clear cache @cardmyyard_oviedo",
+                    "clear cache for username",
+                    "Use 'cache stats' to see what's cached"
+                ]
+            }
+        
+        return {
+            'type': 'clear_user_cache',
+            'message': f"Clear all cached data for @{username}?",
+            'info': [
+                f"🗑️ Remove cached posts for @{username}",
+                f"🗑️ Remove cached profile for @{username}",
+                "💡 Next request will fetch fresh data from Apify"
+            ],
+            'actions': [
+                {
+                    'type': 'clear_user_cache',
+                    'label': f'🧹 Clear @{username} Cache',
+                    'username': username
+                }
+            ],
+            'suggestions': [
+                "Use this if you need fresh data for a user",
+                "Cached data will be refetched on next request",
+                "Helps when user has new posts or profile changes"
+            ]
+        }
+    
+    def _clear_all_cache_response(self) -> Dict[str, Any]:
+        """Clear all cache entries"""
+        return {
+            'type': 'clear_all_cache',
+            'message': "⚠️ Clear ALL cached Apify data?",
+            'warning': [
+                "🚨 This will remove ALL cached Instagram data",
+                "💰 Next requests will use Apify API credits",
+                "⏱️ Requests will be slower until cache rebuilds",
+                "❌ This action cannot be undone"
+            ],
+            'actions': [
+                {
+                    'type': 'clear_all_cache',
+                    'label': '🗑️ Clear All Cache',
+                    'confirm': True
+                }
+            ],
+            'suggestions': [
+                "Consider 'clear expired cache' first",
+                "Only use if you need completely fresh data",
+                "This will increase your Apify API usage"
+            ]
+        }
+    
+    def _clear_cache_help_response(self) -> Dict[str, Any]:
+        """Provide cache management help"""
+        return {
+            'type': 'help',
+            'message': "Cache Management Commands:",
+            'commands': [
+                "📊 **Cache Stats**: 'cache stats' or 'cache statistics'",
+                "🧹 **Clear Expired**: 'clear expired cache'",
+                "👤 **Clear User**: 'clear cache @username'",
+                "🗑️ **Clear All**: 'clear all cache' (use with caution)"
+            ],
+            'benefits': [
+                "💰 Reduces Apify API costs by reusing data",
+                "⚡ Faster response times for cached data",
+                "📊 Automatic expiration keeps data fresh",
+                "🎯 Selective clearing for specific users"
+            ],
+            'actions': [
+                {
+                    'type': 'cache_stats',
+                    'label': '📊 View Cache Stats'
+                },
+                {
+                    'type': 'clear_expired_cache',
+                    'label': '🧹 Clear Expired'
+                }
+            ],
+            'suggestions': [
+                "Check cache stats to see what's stored",
+                "Clear expired cache regularly to save space",
+                "Only clear all cache if you need completely fresh data"
             ]
         }
