@@ -8,25 +8,34 @@ document.addEventListener('DOMContentLoaded', function() {
     checkConnection();
     loadPosts();
     
-    // Form submission
-    document.getElementById('create-post-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        createPost();
-    });
+    // Form submission (if form exists)
+    const createPostForm = document.getElementById('create-post-form');
+    if (createPostForm) {
+        createPostForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            createPost();
+        });
+    }
     
-    // Search on Enter key
-    document.getElementById('search-posts').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            searchPosts();
-        }
-    });
+    // Search on Enter key (if search input exists)
+    const searchPostsInput = document.getElementById('search-posts');
+    if (searchPostsInput) {
+        searchPostsInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchPosts();
+            }
+        });
+    }
     
-    // Chat input on Enter key
-    document.getElementById('chat-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            sendChatMessage();
-        }
-    });
+    // Chat input on Enter key (if chat input exists)
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+    }
 });
 
 // API Functions
@@ -54,21 +63,26 @@ async function apiCall(endpoint, options = {}) {
 
 // Connection check
 async function checkConnection() {
+    const statusEl = document.getElementById('connection-status');
+    if (!statusEl) {
+        console.log('Connection status element not found - skipping connection check');
+        return;
+    }
+    
     try {
         const result = await apiCall('/api/health');
         
-        const statusEl = document.getElementById('connection-status');
         if (result.wordpress_connected) {
-            statusEl.textContent = `✅ Connected to ${result.site_name}`;
+            statusEl.textContent = `✅ Connected to ${result.site_name || 'WordPress'}`;
             statusEl.className = 'status connected';
         } else {
             statusEl.textContent = '❌ WordPress connection failed';
             statusEl.className = 'status disconnected';
         }
     } catch (error) {
-        const statusEl = document.getElementById('connection-status');
-        statusEl.textContent = '❌ Server connection failed';
+        statusEl.textContent = '⚠️ Connection check failed';
         statusEl.className = 'status disconnected';
+        console.log('Connection check failed (this is normal if WordPress credentials need updating):', error.message);
     }
 }
 
@@ -106,14 +120,20 @@ async function createPost() {
 }
 
 async function loadPosts() {
+    const postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) {
+        console.log('Posts container not found - skipping loadPosts');
+        return;
+    }
+    
     try {
-        document.getElementById('posts-container').innerHTML = '<div class="loading">Loading posts...</div>';
+        postsContainer.innerHTML = '<div class="loading">Loading posts...</div>';
         
         const posts = await apiCall('/api/posts?limit=20');
         currentPosts = posts;
         displayPosts(posts);
     } catch (error) {
-        document.getElementById('posts-container').innerHTML = 
+        postsContainer.innerHTML = 
             `<div class="error">Error loading posts: ${error.message}</div>`;
     }
 }
@@ -1009,9 +1029,9 @@ async function clearAllCache() {
 //             addChatMessage('system', `❌ Import failed: ${error.message}`);
 //         }
 //     }
-// }// Instagr
-am Post Viewer Functions
-let currentPosts = [];
+// }
+
+// Instagram Post Viewer Functions
 let currentPostIndex = 0;
 
 function displayInstagramPosts(posts) {
