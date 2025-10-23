@@ -110,6 +110,10 @@ manual_import_results.json
 instagram_tokens.json
 organize_files.py
 
+# Cache and temporary data
+cache/
+data/
+
 # Temporary files
 *.tmp
 *.temp
