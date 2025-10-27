@@ -209,7 +209,7 @@ def test_scraper_v3():
     """Test the simple Instagram scraper"""
     scraper = InstagramScraperV3()
     
-    username = 'cardmyyard_oviedo'
+    username = 'example_user'
     
     print("=" * 60)
     print(f"Testing Simple Instagram Scraper with @{username}")

@@ -4,7 +4,9 @@ Test WordPress REST API image upload directly
 """
 import os
 import sys
-sys.path.append('.')
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.utils.wordpress_media import WordPressMediaUploader
 from src.utils.image_cache import ImageCache
@@ -23,7 +25,7 @@ def test_wordpress_upload():
     
     post_data = {
         'shortcode': 'test_upload',
-        'username': 'cardmyyard_oviedo',
+        'username': 'example_user',
         'caption': 'Test upload via REST API'
     }
     

@@ -7,14 +7,14 @@ This document chronicles our complete journey attempting to integrate Instagram 
 ---
 
 ## 🎯 **Original Goal**
-Enable users to connect their Instagram accounts (@cardmyyard_oviedo) to import posts directly into WordPress using official Instagram API instead of scraping.
+Enable users to connect their Instagram accounts (@example_user) to import posts directly into WordPress using official Instagram API instead of scraping.
 
 ---
 
 ## 📋 **Meta/Facebook Developer Console Setup**
 
 ### App Creation (October 20, 2025)
-- **App Name**: CardMyYard_WP
+- **App Name**: example_business_WP
 - **Facebook App ID**: `1912193163057707`
 - **Instagram App ID**: `1763640594316971` (different from Facebook App ID!)
 - **App Secret**: `b693af607676e42335a483d4c49699cd1`
@@ -121,7 +121,7 @@ npx localtunnel --port 5000
 **Solution**: Added `fruity-bushes-prove.loca.lt` to App Domains in Facebook App Settings → Basic
 
 ### Issue 2: Secure Connection Warning
-**Error**: "Facebook has detected CardMyYard_WP isn't using a secure connection to transfer information"
+**Error**: "Facebook has detected example_business_WP isn't using a secure connection to transfer information"
 
 **Status**: ⏸️ Unresolved - requires additional security configuration in Meta console
 
@@ -231,7 +231,7 @@ Since OAuth proved complex, we implemented a working manual import system:
 ### Option A: Complete OAuth (High Effort)
 1. **Resolve security warnings** in Meta console
 2. **Complete app review process** if required
-3. **Test full OAuth flow** with @cardmyyard_oviedo
+3. **Test full OAuth flow** with @example_user
 4. **Implement authenticated import** features
 
 ### Option B: Enhanced Manual Import (Medium Effort)
@@ -269,7 +269,7 @@ Since OAuth proved complex, we implemented a working manual import system:
 INSTAGRAM_CLIENT_ID=1912193163057707
 INSTAGRAM_CLIENT_SECRET=b693af607676e42335a483d4c49699cd1
 INSTAGRAM_REDIRECT_URI=https://fruity-bushes-prove.loca.lt/auth/instagram/callback
-SECRET_KEY=cardmyyard_secret_key_2024
+SECRET_KEY=example_business_secret_key_2024
 ```
 
 ---

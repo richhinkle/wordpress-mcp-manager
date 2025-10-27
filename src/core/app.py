@@ -463,8 +463,9 @@ app.secret_key = SECRET_KEY
 # Initialize MCP client
 mcp_client = WordPressMCPClient(WORDPRESS_URL, ACCESS_TOKEN)
 
-# Store MCP client in app config for blueprint access
+# Store MCP client and WordPress URL in app config for blueprint access
 app.config['mcp_client'] = mcp_client
+app.config['WORDPRESS_URL'] = WORDPRESS_URL
 
 # Initialize Apify Instagram integration
 APIFY_API_TOKEN = os.environ.get('APIFY_API_TOKEN')
@@ -486,7 +487,9 @@ chat_handler = WordPressChatHandler(mcp_client)
 
 # Register Instagram API routes
 from src.api.instagram_routes import instagram_bp
+from src.api.progress_routes import progress_bp
 app.register_blueprint(instagram_bp)
+app.register_blueprint(progress_bp)
 
 # Routes
 @app.route('/')
@@ -494,6 +497,15 @@ def index():
     """Serve main web interface"""
     from src.core.templates import WEB_INTERFACE_HTML
     return render_template_string(WEB_INTERFACE_HTML)
+
+@app.route('/demo')
+def demo():
+    """Serve image caching demo"""
+    try:
+        with open('demo_image_replacement.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return "Demo file not found", 404
 
 @app.route('/api/health')
 def health_check():
@@ -671,6 +683,20 @@ def chat_history():
         return jsonify(history)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/cached_images/<filename>')
+def serve_cached_image(filename):
+    """Serve cached Instagram images"""
+    try:
+        from flask import send_from_directory
+        import os
+        
+        cache_dir = os.path.join(app.static_folder, 'cached_images')
+        return send_from_directory(cache_dir, filename)
+        
+    except Exception as e:
+        logger.error(f"Error serving cached image {filename}: {e}")
+        return "Image not found", 404
 
 # Content Management - Additional Endpoints
 @app.route('/api/posts/count')

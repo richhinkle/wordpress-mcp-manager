@@ -500,9 +500,17 @@ class WordPressChatHandler:
                 status='draft'
             )
             
+            # Get WordPress base URL for drafts link
+            wordpress_base_url = getattr(self.mcp_client, 'wordpress_url', '').replace('/wp-json/mcp/v1/sse', '')
+            drafts_url = f"{wordpress_base_url}/wp-admin/edit.php?post_status=draft&post_type=post" if wordpress_base_url else None
+            
+            message = f"✅ Created draft post '{title}' with ID {result.get('ID')}"
+            if drafts_url:
+                message += f"\n\n📝 View and publish your drafts: {drafts_url}"
+            
             return {
                 'type': 'success',
-                'message': f"✅ Created draft post '{title}' with ID {result.get('ID')}",
+                'message': message,
                 'data': result,
                 'actions': [
                     f"publish post {result.get('ID')}",
@@ -912,7 +920,7 @@ Summary and final thoughts on {topic}...
                 {
                     'type': 'sample_import',
                     'label': 'Try Sample Import',
-                    'description': 'Test with cardmyyard_oviedo sample data'
+                    'description': 'Test with example_user sample data'
                 }
             ]
         }
@@ -937,7 +945,7 @@ Summary and final thoughts on {topic}...
     #             }
     #         ],
     #         'suggestions': [
-    #             "Click the button above to connect @cardmyyard_oviedo",
+    #             "Click the button above to connect @example_user",
     #             "You'll be redirected to Instagram to grant permissions",
     #             "After connecting, you can import posts with 'import my instagram posts'"
     #         ]
@@ -1456,8 +1464,8 @@ Summary and final thoughts on {topic}...
                 'type': 'question',
                 'message': "Which Instagram username would you like to scrape?",
                 'suggestions': [
-                    "scrape instagram @cardmyyard_oviedo",
-                    "scrape instagram user cardmyyard_oviedo",
+                    "scrape instagram @example_user",
+                    "scrape instagram user example_user",
                     "Try with any public Instagram account"
                 ]
             }
@@ -1497,8 +1505,8 @@ Summary and final thoughts on {topic}...
                 'type': 'question',
                 'message': "Which Instagram username would you like to bulk import?",
                 'suggestions': [
-                    "bulk import @cardmyyard_oviedo",
-                    "scrape and import cardmyyard_oviedo",
+                    "bulk import @example_user",
+                    "scrape and import example_user",
                     "Try with any public Instagram account"
                 ]
             }
@@ -1537,9 +1545,9 @@ Summary and final thoughts on {topic}...
                 'type': 'question',
                 'message': "Which Instagram profile would you like to check?",
                 'suggestions': [
-                    "instagram profile @cardmyyard_oviedo",
-                    "get profile cardmyyard_oviedo",
-                    "check instagram account cardmyyard_oviedo"
+                    "instagram profile @example_user",
+                    "get profile example_user",
+                    "check instagram account example_user"
                 ]
             }
         
@@ -1651,7 +1659,7 @@ Summary and final thoughts on {topic}...
                 'type': 'question',
                 'message': "Which user's cache would you like to clear?",
                 'suggestions': [
-                    "clear cache @cardmyyard_oviedo",
+                    "clear cache @example_user",
                     "clear cache for username",
                     "Use 'cache stats' to see what's cached"
                 ]

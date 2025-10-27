@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram Image Caching Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .demo-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .post-display {
+            border: 2px solid #e1306c;
+            border-radius: 12px;
+            padding: 20px;
+            background: white;
+        }
+        
+        .post-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .post-content {
+            margin-bottom: 15px;
+        }
+        
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .post-caption {
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .post-hashtags {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .url-display {
+            font-family: monospace;
+            font-size: 12px;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            margin: 5px 0;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🖼️ Instagram Image Caching Demo</h1>
+        <p>This demonstrates how we replace Instagram CDN URLs with cached local versions using our breakthrough download method.</p>
+        
+        <div id="status" class="status loading">
+            🔄 Loading Instagram image and caching...
+        </div>
+        
+        <div class="post-display" id="post-display">
+            <img id="post-image" class="post-image" src="" alt="Instagram post">
+            <div class="post-content">
+                <div class="post-meta">
+                    <span id="post-username">@example_user</span>
+                    <span id="post-date">2025-10-09 11:10:00</span>
+                </div>
+                <div id="post-caption" class="post-caption">
+                    Happy 16th Birthday Fiona! We hope you had a wonderful celebration! 🐶🐕🐕‍🦺🩷💜💛🎈
+                </div>
+                <div id="post-hashtags" class="post-hashtags">
+                    #birthdaysigns #example_business #dogbirthday #sweet16
+                </div>
+                <div style="font-size: 0.9em; color: #666;">
+                    <span id="post-engagement">❤️ 3 likes • 💬 0 comments</span>
+                </div>
+            </div>
+            <div class="post-actions">
+                <button class="btn success" onclick="cacheCurrentImage()">🔄 Cache Image</button>
+                <button class="btn secondary" onclick="viewOriginalImage()">🔗 View Original</button>
+            </div>
+        </div>
+        
+        <div class="demo-container">
+            <h3>📊 URL Comparison</h3>
+            <div>
+                <strong>Original Instagram CDN URL:</strong>
+                <div id="original-url" class="url-display">Loading...</div>
+            </div>
+            <div>
+                <strong>Cached Local URL:</strong>
+                <div id="cached-url" class="url-display">Will appear after caching...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Original Instagram CDN URL from your example
+        const originalInstagramUrl = "https://scontent-iad3-1.cdninstagram.com/v/t51.2885-15/561516685_18129700012467505_5306390062499970341_n.jpg?stp=dst-jpg_e35_s1080x1080_sh0.08_tt6&_nc_ht=scontent-iad3-1.cdninstagram.com&_nc_cat=101&_nc_oc=Q6cZ2QHH1xqNc_GQRDy2YfENb3cm28Rta_JVRMIpg0TBlBK_WbECVPw7bpLETCXM6SA1FSL_IYr4pCaAjYOZ9A9dF2EK&_nc_ohc=nqpVSbhMd80Q7kNvwEZ_Wvq&_nc_gid=1xuHV_cndsSHSkPJO_cKcw&edm=APs17CUBAAAA&ccb=7-5&oh=00_Afebjq7FFtXBILxOJMFPlSi8giG48vVWq96Hcz8GOOpuHg&oe=69008031&_nc_sid=10d13b";
+        
+        let cachedUrl = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('original-url').textContent = originalInstagramUrl;
+            
+            // Start with original image
+            const img = document.getElementById('post-image');
+            img.src = originalInstagramUrl;
+            
+            // Auto-cache the image
+            setTimeout(cacheCurrentImage, 1000);
+        });
+        
+        async function cacheCurrentImage() {
+            const statusEl = document.getElementById('status');
+            const img = document.getElementById('post-image');
+            const cachedUrlEl = document.getElementById('cached-url');
+            
+            try {
+                statusEl.className = 'status loading';
+                statusEl.textContent = '🔄 Caching Instagram image using breakthrough method...';
+                
+                const response = await fetch('/api/instagram/cache-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        instagram_url: originalInstagramUrl
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    cachedUrl = result.cached_url;
+                    
+                    // Update image source to cached version
+                    img.src = cachedUrl;
+                    
+                    // Update URL display
+                    cachedUrlEl.textContent = window.location.origin + cachedUrl;
+                    
+                    statusEl.className = 'status success';
+                    statusEl.innerHTML = `
+                        ✅ <strong>Image cached successfully!</strong><br>
+                        📥 Downloaded ${await getImageSize(cachedUrl)} from Instagram CDN<br>
+                        💾 Now serving from local cache<br>
+                        ⚡ Future loads will be instant
+                    `;
+                } else {
+                    throw new Error(result.error || 'Caching failed');
+                }
+                
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Caching failed: ${error.message}`;
+                console.error('Caching error:', error);
+            }
+        }
+        
+        async function getImageSize(url) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                const size = response.headers.get('content-length');
+                if (size) {
+                    const kb = Math.round(size / 1024);
+                    return `${kb} KB`;
+                }
+            } catch (e) {
+                // Ignore errors
+            }
+            return 'unknown size';
+        }
+        
+        function viewOriginalImage() {
+            window.open(originalInstagramUrl, '_blank');
+        }
+        
+        // Show loading placeholder initially
+        document.getElementById('post-image').addEventListener('load', function() {
+            console.log('Image loaded:', this.src);
+        });
+        
+        document.getElementById('post-image').addEventListener('error', function() {
+            console.error('Image failed to load:', this.src);
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status error';
+            statusEl.textContent = '❌ Failed to load image. Instagram URL may have expired.';
+        });
+    </script>
+</body>
+</html>

@@ -148,11 +148,11 @@ class InstagramScraper:
             return None
 
 def test_scraper():
-    """Test the Instagram scraper with cardmyyard_oviedo"""
+    """Test the Instagram scraper with example_user"""
     scraper = InstagramScraper()
     
-    print("Testing Instagram scraper with cardmyyard_oviedo...")
-    posts = scraper.get_user_posts('cardmyyard_oviedo', max_posts=5)
+    print("Testing Instagram scraper with example_user...")
+    posts = scraper.get_user_posts('example_user', max_posts=5)
     
     if posts:
         print(f"\n✅ Successfully scraped {len(posts)} posts!")

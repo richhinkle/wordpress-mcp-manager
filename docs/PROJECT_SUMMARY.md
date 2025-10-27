@@ -93,6 +93,20 @@ wordpress-mcp-manager/
 └── run.py                      # Development server
 ```
 
+## 🎉 **BREAKTHROUGH: Instagram Image Download Solution**
+
+### **Critical Discovery (October 23, 2025)**
+**Instagram CDN images ARE downloadable with standard HTTP requests!**
+
+- ✅ **Proven working**: 311KB+ images downloaded successfully
+- ✅ **No 403 errors**: When using fresh Apify URLs
+- ✅ **Cost effective**: No expensive image download actors needed
+- ✅ **Simple implementation**: Standard `requests` library works
+
+**Key insight**: Apify-scraped Instagram URLs include valid authentication tokens that allow direct CDN access.
+
+**See**: `docs/INSTAGRAM_IMAGE_DOWNLOAD_BREAKTHROUGH.md` for complete documentation.
+
 ## 🔧 **Configuration**
 
 ### **Required Environment Variables**
@@ -135,9 +149,9 @@ python run.py
 ### **Chat Commands**
 ```
 # Instagram Operations
-"scrape instagram @cardmyyard_oviedo"
-"bulk import @cardmyyard_oviedo"
-"instagram profile @cardmyyard_oviedo"
+"scrape instagram @example_user"
+"bulk import @example_user"
+"instagram profile @example_user"
 
 # WordPress Management
 "list drafts"
@@ -226,7 +240,7 @@ APIFY_CACHE_TTL=7200  # 2 hours for production
 
 ### **Functional Achievements**
 - ✅ **100% Working**: Complete Instagram-to-WordPress workflow
-- ✅ **Live Example**: Post ID 35 at https://signsoffall.com/?p=35
+- ✅ **Live Example**: Post ID 35 at https://your-site.com/?p=35
 - ✅ **Rich Metadata**: Full Instagram data preservation
 - ✅ **Professional UI**: Modern, responsive interface
 - ✅ **Cost Effective**: Smart caching reduces API usage

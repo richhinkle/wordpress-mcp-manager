@@ -32,7 +32,7 @@ python run.py
 ## 📱 **Using the Application**
 
 ### **Import Instagram Posts**
-1. **Type in chat**: `"scrape instagram @cardmyyard_oviedo"`
+1. **Type in chat**: `"scrape instagram @example_user"`
 2. **Browse posts**: Use arrow keys or navigation buttons
 3. **Import to WordPress**: Click "📝 Import to WordPress"
 4. **Publish when ready**: Use "📋 Show Posts" → "📤 Publish"
@@ -105,10 +105,10 @@ python run.py
 
 ## 🎉 **Success Story**
 
-**Live Example**: Successfully imported @cardmyyard_oviedo Instagram posts
+**Live Example**: Successfully imported @example_user Instagram posts
 - **Scraped**: Professional Apify API integration
 - **Imported**: WordPress Post ID 35 with full metadata
-- **Published**: Live at https://signsoffall.com/?p=35
+- **Published**: Live at https://your-site.com/?p=35
 - **Workflow**: Complete end-to-end functionality proven
 
 **Result**: A production-ready application that transforms Instagram content management from hours of manual work to seconds of automated workflow.

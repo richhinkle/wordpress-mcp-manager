@@ -1,160 +1,179 @@
+#!/usr/bin/env python3
 """
-Image caching utility for Instagram images
+Image Cache System for Instagram Images
+Uses our breakthrough download method to cache Instagram images locally
 """
+
 import os
 import hashlib
 import requests
+import logging
 from pathlib import Path
 from typing import Optional, Tuple
-import mimetypes
 from urllib.parse import urlparse
 
-class ImageCache:
-    def __init__(self, cache_dir: str = None):
-        if cache_dir is None:
-            # Get the project root directory (go up from src/utils to project root)
-            project_root = Path(__file__).parent.parent.parent
-            cache_dir = project_root / "cache" / "images"
-        else:
-            cache_dir = Path(cache_dir)
-        
-        self.cache_dir = cache_dir
+logger = logging.getLogger(__name__)
+
+class InstagramImageCache:
+    """
+    Cache system for Instagram images using our breakthrough download method
+    """
+    
+    def __init__(self, cache_dir: str = "static/cached_images"):
+        self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         
-    def _get_cache_path(self, image_url: str) -> Path:
-        """Generate cache file path based on URL hash"""
-        url_hash = hashlib.md5(image_url.encode()).hexdigest()
+        # Setup session with Instagram-friendly headers
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://www.instagram.com/',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'DNT': '1',
+            'Connection': 'keep-alive'
+        })
+    
+    def _get_cache_filename(self, instagram_url: str) -> str:
+        """Generate a cache filename from Instagram URL"""
+        # Create a hash of the URL for consistent filename
+        url_hash = hashlib.md5(instagram_url.encode()).hexdigest()
         
-        # Try to get file extension from URL
-        parsed_url = urlparse(image_url)
-        path_parts = parsed_url.path.split('.')
-        if len(path_parts) > 1:
-            extension = path_parts[-1].split('?')[0]  # Remove query params
-            if extension.lower() in ['jpg', 'jpeg', 'png', 'webp', 'gif']:
-                return self.cache_dir / f"{url_hash}.{extension}"
+        # Extract original filename if possible
+        parsed = urlparse(instagram_url)
+        path_parts = parsed.path.split('/')
+        original_name = path_parts[-1] if path_parts else 'image'
         
-        # Default to jpg if no extension found
-        return self.cache_dir / f"{url_hash}.jpg"
+        # Remove query parameters from original name
+        if '?' in original_name:
+            original_name = original_name.split('?')[0]
+        
+        # Ensure it has an extension
+        if not original_name.endswith(('.jpg', '.jpeg', '.png', '.webp')):
+            original_name += '.jpg'
+        
+        # Combine hash with original name for uniqueness
+        return f"{url_hash}_{original_name}"
     
-    def is_cached(self, image_url: str) -> bool:
-        """Check if image is already cached"""
-        cache_path = self._get_cache_path(image_url)
-        return cache_path.exists()
-    
-    def get_cached_path(self, image_url: str) -> Optional[Path]:
-        """Get path to cached image if it exists"""
-        cache_path = self._get_cache_path(image_url)
-        return cache_path if cache_path.exists() else None
-    
-    def cache_image(self, image_url: str, force_refresh: bool = False) -> Tuple[bool, Optional[Path], Optional[str]]:
+    def _download_instagram_image(self, instagram_url: str) -> Tuple[bool, Optional[bytes], Optional[str]]:
         """
-        Cache an image from URL
-        
-        Returns:
-            (success, cache_path, error_message)
+        Download Instagram image using our breakthrough method
         """
-        cache_path = self._get_cache_path(image_url)
-        
-        # Skip if already cached and not forcing refresh
-        if cache_path.exists() and not force_refresh:
-            return True, cache_path, None
-        
         try:
-            # Enhanced Instagram-appropriate headers to bypass restrictions
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': 'https://www.instagram.com/',
-                'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'DNT': '1',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'image',
-                'Sec-Fetch-Mode': 'no-cors',
-                'Sec-Fetch-Site': 'cross-site',
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            }
+            # Get Instagram homepage for cookies (helps with success rate)
+            self.session.get('https://www.instagram.com/', timeout=10)
             
-            # Use a session to maintain cookies and look more like a real browser
-            session = requests.Session()
-            session.headers.update(headers)
-            
-            # First make a request to Instagram to get cookies
-            try:
-                session.get('https://www.instagram.com/', timeout=10)
-            except:
-                pass  # Ignore errors, just trying to get cookies
-            
-            response = session.get(image_url, timeout=15, stream=True)
+            # Download the image
+            response = self.session.get(instagram_url, timeout=30)
             response.raise_for_status()
             
-            # Verify it's actually an image
-            content_type = response.headers.get('content-type', '')
-            if not content_type.startswith('image/'):
-                return False, None, f"URL does not return an image (content-type: {content_type})"
-            
-            # Save to cache
-            with open(cache_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            
-            return True, cache_path, None
-            
+            if response.status_code == 200:
+                logger.info(f"✅ Successfully downloaded {len(response.content)} bytes from Instagram")
+                return True, response.content, None
+            else:
+                error_msg = f"HTTP {response.status_code}"
+                logger.warning(f"⚠️ Download failed: {error_msg}")
+                return False, None, error_msg
+                
         except requests.exceptions.RequestException as e:
-            return False, None, f"Failed to download image: {str(e)}"
+            error_msg = f"Request failed: {str(e)}"
+            logger.error(f"❌ Download error: {error_msg}")
+            return False, None, error_msg
         except Exception as e:
-            return False, None, f"Error caching image: {str(e)}"
+            error_msg = f"Unexpected error: {str(e)}"
+            logger.error(f"❌ Unexpected error: {error_msg}")
+            return False, None, error_msg
     
-    def get_image_info(self, cache_path: Path) -> dict:
-        """Get basic info about cached image"""
-        if not cache_path.exists():
-            return {}
+    def get_cached_image_url(self, instagram_url: str, force_refresh: bool = False) -> Optional[str]:
+        """
+        Get cached image URL, downloading if necessary
         
-        stat = cache_path.stat()
-        mime_type, _ = mimetypes.guess_type(str(cache_path))
-        
-        return {
-            'path': str(cache_path),
-            'size_bytes': stat.st_size,
-            'size_mb': round(stat.st_size / (1024 * 1024), 2),
-            'mime_type': mime_type,
-            'filename': cache_path.name
-        }
+        Args:
+            instagram_url: Original Instagram CDN URL
+            force_refresh: Force re-download even if cached
+            
+        Returns:
+            Local cached image URL or None if failed
+        """
+        try:
+            cache_filename = self._get_cache_filename(instagram_url)
+            cache_path = self.cache_dir / cache_filename
+            
+            # Check if already cached and not forcing refresh
+            if cache_path.exists() and not force_refresh:
+                logger.info(f"📁 Using cached image: {cache_filename}")
+                return f"/cached_images/{cache_filename}"
+            
+            # Download the image
+            logger.info(f"📥 Downloading Instagram image: {instagram_url[:80]}...")
+            success, image_data, error = self._download_instagram_image(instagram_url)
+            
+            if success and image_data:
+                # Save to cache
+                with open(cache_path, 'wb') as f:
+                    f.write(image_data)
+                
+                logger.info(f"💾 Cached image: {cache_filename} ({len(image_data)} bytes)")
+                return f"/cached_images/{cache_filename}"
+            else:
+                logger.error(f"❌ Failed to download image: {error}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ Cache error: {e}")
+            return None
     
-    def cleanup_old_images(self, max_age_days: int = 30):
-        """Remove cached images older than specified days"""
-        import time
+    def cache_multiple_images(self, instagram_urls: list) -> dict:
+        """
+        Cache multiple Instagram images
         
-        current_time = time.time()
-        max_age_seconds = max_age_days * 24 * 60 * 60
+        Args:
+            instagram_urls: List of Instagram CDN URLs
+            
+        Returns:
+            Dictionary mapping original URLs to cached URLs
+        """
+        results = {}
         
-        removed_count = 0
-        for image_file in self.cache_dir.glob("*"):
-            if image_file.is_file():
-                file_age = current_time - image_file.stat().st_mtime
-                if file_age > max_age_seconds:
-                    image_file.unlink()
-                    removed_count += 1
+        for url in instagram_urls:
+            cached_url = self.get_cached_image_url(url)
+            results[url] = cached_url
         
-        return removed_count
+        return results
     
     def get_cache_stats(self) -> dict:
-        """Get statistics about the image cache"""
-        if not self.cache_dir.exists():
-            return {'total_images': 0, 'total_size_mb': 0}
-        
-        total_size = 0
-        image_count = 0
-        
-        for image_file in self.cache_dir.glob("*"):
-            if image_file.is_file():
-                total_size += image_file.stat().st_size
-                image_count += 1
-        
-        return {
-            'total_images': image_count,
-            'total_size_mb': round(total_size / (1024 * 1024), 2),
-            'cache_dir': str(self.cache_dir)
-        }
+        """Get cache statistics"""
+        try:
+            cache_files = list(self.cache_dir.glob('*'))
+            total_size = sum(f.stat().st_size for f in cache_files if f.is_file())
+            
+            return {
+                'total_files': len(cache_files),
+                'total_size_bytes': total_size,
+                'total_size_mb': round(total_size / (1024 * 1024), 2),
+                'cache_dir': str(self.cache_dir)
+            }
+        except Exception as e:
+            logger.error(f"Error getting cache stats: {e}")
+            return {}
+    
+    def clear_cache(self) -> int:
+        """Clear all cached images"""
+        try:
+            cache_files = list(self.cache_dir.glob('*'))
+            removed_count = 0
+            
+            for cache_file in cache_files:
+                if cache_file.is_file():
+                    cache_file.unlink()
+                    removed_count += 1
+            
+            logger.info(f"🗑️ Cleared {removed_count} cached images")
+            return removed_count
+            
+        except Exception as e:
+            logger.error(f"Error clearing cache: {e}")
+            return 0
+
+# Global cache instance
+image_cache = InstagramImageCache()

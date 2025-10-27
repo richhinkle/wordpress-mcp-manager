@@ -3,6 +3,9 @@
 // Application state
 let currentPosts = [];
 
+// Image cache for Instagram images
+const imageCache = new Map();
+
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
     checkConnection();
@@ -139,8 +142,14 @@ async function loadPosts() {
 }
 
 async function loadDrafts() {
+    const postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) {
+        console.log('Posts container not found - skipping loadDrafts');
+        return;
+    }
+    
     try {
-        document.getElementById('posts-container').innerHTML = '<div class="loading">Loading drafts...</div>';
+        postsContainer.innerHTML = '<div class="loading">Loading drafts...</div>';
         
         const posts = await apiCall('/api/posts?status=draft&limit=20');
         currentPosts = posts;
@@ -153,8 +162,14 @@ async function loadDrafts() {
 }
 
 async function loadPublished() {
+    const postsContainer = document.getElementById('posts-container');
+    if (!postsContainer) {
+        console.log('Posts container not found - skipping loadPublished');
+        return;
+    }
+    
     try {
-        document.getElementById('posts-container').innerHTML = '<div class="loading">Loading published posts...</div>';
+        postsContainer.innerHTML = '<div class="loading">Loading published posts...</div>';
         
         const posts = await apiCall('/api/posts?status=publish&limit=20');
         currentPosts = posts;
@@ -167,14 +182,22 @@ async function loadPublished() {
 }
 
 async function searchPosts() {
-    const query = document.getElementById('search-posts').value.trim();
+    const searchInput = document.getElementById('search-posts');
+    const postsContainer = document.getElementById('posts-container');
+    
+    if (!searchInput || !postsContainer) {
+        console.log('Search elements not found - skipping searchPosts');
+        return;
+    }
+    
+    const query = searchInput.value.trim();
     if (!query) {
         loadPosts();
         return;
     }
     
     try {
-        document.getElementById('posts-container').innerHTML = '<div class="loading">Searching posts...</div>';
+        postsContainer.innerHTML = '<div class="loading">Searching posts...</div>';
         
         const posts = await apiCall(`/api/posts?search=${encodeURIComponent(query)}&limit=50`);
         currentPosts = posts;
@@ -272,11 +295,10 @@ async function checkSiteHealth() {
             </div>
         `;
         
-        document.getElementById('quick-info').innerHTML = info;
+        safeSetInnerHTML('quick-info', info);
         showNotification('Site health check completed', 'success');
     } catch (error) {
-        document.getElementById('quick-info').innerHTML = 
-            `<div class="error">❌ Site health check failed: ${error.message}</div>`;
+        safeSetInnerHTML('quick-info', `<div class="error">❌ Site health check failed: ${error.message}</div>`);
         showNotification('Site health check failed', 'error');
     }
 }
@@ -293,7 +315,7 @@ async function listPlugins() {
         });
         html += '</ul></div>';
         
-        document.getElementById('quick-info').innerHTML = html;
+        safeSetInnerHTML('quick-info', html);
         showNotification(`Found ${plugins.length} plugins`, 'success');
     } catch (error) {
         showNotification(`Error loading plugins: ${error.message}`, 'error');
@@ -316,7 +338,7 @@ async function listUsers() {
         });
         html += '</ul></div>';
         
-        document.getElementById('quick-info').innerHTML = html;
+        safeSetInnerHTML('quick-info', html);
         showNotification(`Found ${users.length} users`, 'success');
     } catch (error) {
         showNotification(`Error loading users: ${error.message}`, 'error');
@@ -352,7 +374,7 @@ async function generateAIImage() {
                 <p><strong>URL:</strong> <a href="${result.url}" target="_blank">View Image</a></p>
             </div>
         `;
-        document.getElementById('quick-info').innerHTML = info;
+        safeSetInnerHTML('quick-info', info);
     } catch (error) {
         showNotification(`Error generating image: ${error.message}`, 'error');
     }
@@ -390,18 +412,29 @@ async function uploadFromUrl() {
                 <p><strong>URL:</strong> <a href="${result.url}" target="_blank">View Media</a></p>
             </div>
         `;
-        document.getElementById('quick-info').innerHTML = info;
+        safeSetInnerHTML('quick-info', info);
     } catch (error) {
         showNotification(`Error uploading media: ${error.message}`, 'error');
     }
 }
 
 // Utility functions
+function safeSetInnerHTML(elementId, content) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.innerHTML = content;
+        return true;
+    }
+    console.log(`Element with id '${elementId}' not found`);
+    return false;
+}
+
 function clearForm() {
-    document.getElementById('post-title').value = '';
-    document.getElementById('post-content').value = '';
-    document.getElementById('post-excerpt').value = '';
-    document.getElementById('post-status').value = 'draft';
+    const elements = ['post-title', 'post-content', 'post-excerpt', 'post-status'];
+    elements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = id === 'post-status' ? 'draft' : '';
+    });
 }
 
 function escapeHtml(text) {
@@ -432,7 +465,240 @@ function showNotification(message, type) {
     }, 3000);
 }
 
+// Progress Tracking Functions
+class ProgressTracker {
+    constructor() {
+        this.activeStreams = new Map();
+    }
+    
+    startTracking(sessionId, onProgress, onComplete, onError) {
+        if (this.activeStreams.has(sessionId)) {
+            console.log('Progress stream already active for session:', sessionId);
+            return;
+        }
+        
+        const eventSource = new EventSource(`/api/progress/stream/${sessionId}`);
+        this.activeStreams.set(sessionId, eventSource);
+        
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                
+                switch (data.type) {
+                    case 'connected':
+                        console.log('Progress stream connected:', sessionId);
+                        break;
+                    case 'progress':
+                        if (onProgress) onProgress(data);
+                        break;
+                    case 'complete':
+                        if (onComplete) onComplete(data);
+                        this.stopTracking(sessionId);
+                        break;
+                    case 'error':
+                        if (onError) onError(data);
+                        this.stopTracking(sessionId);
+                        break;
+                }
+            } catch (e) {
+                console.error('Error parsing progress data:', e);
+            }
+        };
+        
+        eventSource.onerror = (error) => {
+            console.error('Progress stream error:', error);
+            if (onError) onError({ error: 'Connection lost' });
+            this.stopTracking(sessionId);
+        };
+    }
+    
+    stopTracking(sessionId) {
+        if (this.activeStreams.has(sessionId)) {
+            this.activeStreams.get(sessionId).close();
+            this.activeStreams.delete(sessionId);
+        }
+    }
+    
+    stopAll() {
+        for (const [sessionId, eventSource] of this.activeStreams) {
+            eventSource.close();
+        }
+        this.activeStreams.clear();
+    }
+}
+
+// Global progress tracker instance
+const progressTracker = new ProgressTracker();
+
+function addProgressMessage(sessionId, message, percentage = null) {
+    const container = document.getElementById('chat-container');
+    const messageDiv = document.createElement('div');
+    messageDiv.id = `progress-${sessionId}`;
+    messageDiv.className = 'chat-message system progress-message';
+    
+    let content = `<strong>🤖 System:</strong> ${message}`;
+    
+    if (percentage !== null) {
+        content += `
+            <div class="progress-bar-container" style="margin-top: 8px;">
+                <div class="progress-bar" style="width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                    <div class="progress-fill" style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s ease;"></div>
+                </div>
+                <div class="progress-text" style="font-size: 12px; color: #666; margin-top: 4px;">${percentage}% complete</div>
+            </div>
+        `;
+    }
+    
+    messageDiv.innerHTML = content;
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+    
+    return messageDiv;
+}
+
+function updateProgressMessage(sessionId, message, percentage = null, details = null) {
+    const messageDiv = document.getElementById(`progress-${sessionId}`);
+    if (!messageDiv) return;
+    
+    let content = `<strong>🤖 System:</strong> ${message}`;
+    
+    if (details && details.imported && details.total) {
+        content += ` (${details.imported}/${details.total})`;
+    }
+    
+    if (percentage !== null) {
+        content += `
+            <div class="progress-bar-container" style="margin-top: 8px;">
+                <div class="progress-bar" style="width: 100%; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden;">
+                    <div class="progress-fill" style="width: ${percentage}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s ease;"></div>
+                </div>
+                <div class="progress-text" style="font-size: 12px; color: #666; margin-top: 4px;">${percentage}% complete</div>
+            </div>
+        `;
+    }
+    
+    messageDiv.innerHTML = content;
+}
+
+function completeProgressMessage(sessionId, message) {
+    const messageDiv = document.getElementById(`progress-${sessionId}`);
+    if (!messageDiv) return;
+    
+    messageDiv.innerHTML = `<strong>🤖 System:</strong> ${message}`;
+    messageDiv.className = 'chat-message system progress-complete';
+    
+    // Add completion styling
+    messageDiv.style.background = '#d4edda';
+    messageDiv.style.borderColor = '#c3e6cb';
+    messageDiv.style.color = '#155724';
+}
+
 // Chat Interface Functions
+function getImmediateFeedback(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    // Instagram scraping commands
+    if (lowerMessage.includes('scrape instagram') || lowerMessage.includes('instagram scrape')) {
+        if (lowerMessage.includes('@')) {
+            const username = extractUsername(message);
+            return `🔍 Starting Instagram scrape for ${username}...`;
+        }
+        return '🔍 Starting Instagram scrape...';
+    }
+    
+    // Bulk import commands
+    if (lowerMessage.includes('bulk import') || lowerMessage.includes('import bulk')) {
+        if (lowerMessage.includes('@')) {
+            const username = extractUsername(message);
+            return `📥 Starting bulk import for ${username}...`;
+        }
+        return '📥 Starting bulk import...';
+    }
+    
+    // Instagram URL import
+    if (lowerMessage.includes('import instagram') && (lowerMessage.includes('http') || lowerMessage.includes('instagram.com'))) {
+        const urlCount = (message.match(/https?:\/\/[^\s]+/g) || []).length;
+        return `📱 Importing ${urlCount} Instagram post${urlCount !== 1 ? 's' : ''}...`;
+    }
+    
+    // Post creation
+    if (lowerMessage.includes('create post') || lowerMessage.includes('new post')) {
+        return '📝 Creating new WordPress post...';
+    }
+    
+    // Status checks
+    if (lowerMessage.includes('apify status') || lowerMessage.includes('status')) {
+        return '🔍 Checking Apify integration status...';
+    }
+    
+    // Cache operations
+    if (lowerMessage.includes('cache stats')) {
+        return '📊 Getting cache statistics...';
+    }
+    
+    if (lowerMessage.includes('clear cache')) {
+        return '🧹 Clearing cache...';
+    }
+    
+    // Help commands
+    if (lowerMessage.includes('help') || lowerMessage === '?') {
+        return '❓ Loading help information...';
+    }
+    
+    // Site health
+    if (lowerMessage.includes('site health') || lowerMessage.includes('health check')) {
+        return '🏥 Running WordPress site health check...';
+    }
+    
+    // List operations
+    if (lowerMessage.includes('list posts') || lowerMessage.includes('show posts')) {
+        return '📋 Loading WordPress posts...';
+    }
+    
+    if (lowerMessage.includes('list drafts') || lowerMessage.includes('show drafts')) {
+        return '📝 Loading draft posts...';
+    }
+    
+    // Default for unrecognized commands
+    return '🤖 Processing your request...';
+}
+
+function extractUsername(message) {
+    const match = message.match(/@([a-zA-Z0-9._]+)/);
+    return match ? `@${match[1]}` : 'user';
+}
+
+function getTypingMessage(message) {
+    const lowerMessage = message.toLowerCase();
+    
+    // More specific typing messages for different operations
+    if (lowerMessage.includes('scrape instagram') || lowerMessage.includes('bulk import')) {
+        return 'Connecting to Instagram API and processing posts...';
+    }
+    
+    if (lowerMessage.includes('import instagram') && lowerMessage.includes('http')) {
+        return 'Extracting post data from Instagram URLs...';
+    }
+    
+    if (lowerMessage.includes('apify status')) {
+        return 'Checking Apify API connection and usage...';
+    }
+    
+    if (lowerMessage.includes('cache')) {
+        return 'Accessing cache system...';
+    }
+    
+    if (lowerMessage.includes('site health')) {
+        return 'Running WordPress diagnostics...';
+    }
+    
+    if (lowerMessage.includes('create post')) {
+        return 'Creating WordPress post...';
+    }
+    
+    return 'Processing your request...';
+}
+
 async function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
@@ -445,8 +711,19 @@ async function sendChatMessage() {
     // Add user message to chat
     addChatMessage(message, 'user');
     
-    // Show typing indicator
-    const typingId = addChatMessage('Thinking...', 'assistant', true);
+    // Add immediate feedback based on message content
+    const feedbackMessage = getImmediateFeedback(message);
+    if (feedbackMessage) {
+        addChatMessage(feedbackMessage, 'system');
+    }
+    
+    // Disable input during processing
+    input.disabled = true;
+    input.placeholder = 'Processing...';
+    
+    // Show typing indicator with more specific message
+    const typingMessage = getTypingMessage(message);
+    const typingId = addChatMessage(typingMessage, 'assistant', true);
     
     try {
         // Send message to API
@@ -456,14 +733,28 @@ async function sendChatMessage() {
         });
         
         // Remove typing indicator
-        document.getElementById(typingId).remove();
+        const typingElement = document.getElementById(typingId);
+        if (typingElement) {
+            typingElement.remove();
+        }
+        
+        // Re-enable input
+        input.disabled = false;
+        input.placeholder = 'Type your message...';
         
         // Add assistant response
         addChatResponse(response);
         
     } catch (error) {
         // Remove typing indicator
-        document.getElementById(typingId).remove();
+        const typingElement = document.getElementById(typingId);
+        if (typingElement) {
+            typingElement.remove();
+        }
+        
+        // Re-enable input
+        input.disabled = false;
+        input.placeholder = 'Type your message...';
         
         // Add error message
         addChatMessage(`Sorry, I encountered an error: ${error.message}`, 'assistant error');
@@ -480,6 +771,9 @@ function addChatMessage(message, sender, isTyping = false) {
     
     if (sender === 'user') {
         messageDiv.innerHTML = `<strong>👤 You:</strong> ${escapeHtml(message)}`;
+    } else if (sender === 'system') {
+        // System messages can contain HTML (like links)
+        messageDiv.innerHTML = `<strong>🤖 System:</strong> ${message}`;
     } else {
         messageDiv.innerHTML = `<strong>🤖 Assistant:</strong> ${escapeHtml(message)}`;
     }
@@ -562,6 +856,10 @@ function addHelpCommands(commands) {
 
 function updateChatSuggestions(suggestions) {
     const suggestionsContainer = document.getElementById('chat-suggestions');
+    if (!suggestionsContainer) {
+        console.log('Chat suggestions container not found');
+        return;
+    }
     suggestionsContainer.innerHTML = '';
     
     suggestions.forEach(suggestion => {
@@ -673,7 +971,11 @@ async function importInstagramUrls(urls) {
             });
             
             if (wpResponse.success) {
-                addChatMessage('system', `🎉 Successfully imported ${wpResponse.imported_count} posts to WordPress as drafts!`);
+                let message = `🎉 Successfully imported ${wpResponse.imported_count} posts to WordPress as drafts!`;
+                if (wpResponse.drafts_url) {
+                    message += `\n\n📝 <a href="${wpResponse.drafts_url}" target="_blank" style="color: #0073aa; text-decoration: underline;">View and publish your drafts in WordPress →</a>`;
+                }
+                addChatMessage('system', message);
                 loadPosts(); // Refresh the posts list
             } else {
                 addChatMessage('system', `❌ WordPress import failed: ${wpResponse.error}`);
@@ -689,7 +991,7 @@ async function importInstagramUrls(urls) {
 function downloadCsvTemplate() {
     const csvContent = `caption,image_url,post_url,hashtags
 "Sample Instagram post caption with #hashtags #example","https://example.com/image1.jpg","https://www.instagram.com/p/ABC123/","hashtags,example"
-"Another sample post for Card My Yard #cardmyyard #signs","https://example.com/image2.jpg","https://www.instagram.com/p/DEF456/","cardmyyard,signs"`;
+"Another sample post for Example Business #example_business #signs","https://example.com/image2.jpg","https://www.instagram.com/p/DEF456/","example_business,signs"`;
     
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -710,7 +1012,7 @@ async function sampleInstagramImport() {
         'https://www.instagram.com/p/sample2/'
     ];
     
-    addChatMessage('system', '🧪 This would import sample posts from @cardmyyard_oviedo. Replace with real Instagram URLs to test.');
+    addChatMessage('system', '🧪 This would import sample posts from @example_user. Replace with real Instagram URLs to test.');
 }
 
 // Apify Instagram Integration Functions
@@ -737,8 +1039,7 @@ async function checkApifyStatus() {
 
 async function scrapeInstagramUser(username, limit = 20) {
     try {
-        addChatMessage('system', `🔄 Scraping @${username} via Apify (limit: ${limit})...`);
-        
+        // Start the API call
         const response = await apiCall('/api/instagram/apify/scrape-user', {
             method: 'POST',
             body: JSON.stringify({ 
@@ -747,25 +1048,48 @@ async function scrapeInstagramUser(username, limit = 20) {
             })
         });
         
-        if (response.success) {
-            addChatMessage('system', `✅ Scraped ${response.posts_count} posts from @${username}`);
+        if (response.success && response.progress_session_id) {
+            // Start progress tracking
+            const sessionId = response.progress_session_id;
+            addProgressMessage(sessionId, `🚀 Starting scrape of @${username}...`, 0);
             
-            // Show option to import to WordPress
-            const importBtn = document.createElement('button');
-            importBtn.className = 'chat-action-btn';
-            importBtn.textContent = 'Import to WordPress';
-            importBtn.onclick = () => importApifyPostsToWordPress(response.posts);
-            
-            const container = document.getElementById('chat-container');
-            const lastMessage = container.lastElementChild;
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'chat-actions';
-            actionsDiv.appendChild(importBtn);
-            lastMessage.appendChild(actionsDiv);
+            progressTracker.startTracking(
+                sessionId,
+                // onProgress
+                (data) => {
+                    updateProgressMessage(sessionId, data.message, data.percentage, data.details);
+                },
+                // onComplete
+                (data) => {
+                    completeProgressMessage(sessionId, data.message);
+                    
+                    // Show posts in viewer and add import option
+                    if (response.posts && response.posts.length > 0) {
+                        displayInstagramPosts(response.posts);
+                        
+                        // Add import button to chat
+                        const importBtn = document.createElement('button');
+                        importBtn.className = 'chat-action-btn';
+                        importBtn.textContent = 'Import All to WordPress';
+                        importBtn.onclick = () => importApifyPostsToWordPress(response.posts);
+                        
+                        const container = document.getElementById('chat-container');
+                        const lastMessage = container.lastElementChild;
+                        const actionsDiv = document.createElement('div');
+                        actionsDiv.className = 'chat-actions';
+                        actionsDiv.appendChild(importBtn);
+                        lastMessage.appendChild(actionsDiv);
+                    }
+                },
+                // onError
+                (data) => {
+                    addChatMessage('system', `❌ Scraping failed: ${data.error || 'Unknown error'}`);
+                }
+            );
             
             return response.posts;
         } else {
-            addChatMessage('system', `❌ Scraping failed: ${response.error}`);
+            addChatMessage('system', `❌ Scraping failed: ${response.error || 'No progress tracking available'}`);
         }
     } catch (error) {
         addChatMessage('system', `❌ Scraping failed: ${error.message}`);
@@ -774,8 +1098,7 @@ async function scrapeInstagramUser(username, limit = 20) {
 
 async function bulkImportInstagramUser(username, limit = 10) {
     try {
-        addChatMessage('system', `🚀 Bulk importing @${username} via Apify (limit: ${limit})...`);
-        
+        // Start the API call
         const response = await apiCall('/api/instagram/apify/bulk-import', {
             method: 'POST',
             body: JSON.stringify({ 
@@ -784,11 +1107,33 @@ async function bulkImportInstagramUser(username, limit = 10) {
             })
         });
         
-        if (response.success) {
-            addChatMessage('system', `🎉 Successfully imported ${response.imported_count} of ${response.scraped_count} posts from @${username} to WordPress!`);
-            loadPosts(); // Refresh the posts list
+        if (response.success && response.progress_session_id) {
+            // Start progress tracking for bulk import
+            const sessionId = response.progress_session_id;
+            addProgressMessage(sessionId, `🚀 Starting bulk import of @${username}...`, 0);
+            
+            progressTracker.startTracking(
+                sessionId,
+                // onProgress
+                (data) => {
+                    updateProgressMessage(sessionId, data.message, data.percentage, data.details);
+                },
+                // onComplete
+                (data) => {
+                    let message = data.message;
+                    if (response.drafts_url) {
+                        message += `\n\n📝 <a href="${response.drafts_url}" target="_blank" style="color: #0073aa; text-decoration: underline;">View and publish your drafts in WordPress →</a>`;
+                    }
+                    completeProgressMessage(sessionId, message);
+                    loadPosts(); // Refresh the posts list
+                },
+                // onError
+                (data) => {
+                    addChatMessage('system', `❌ Bulk import failed: ${data.error || 'Unknown error'}`);
+                }
+            );
         } else {
-            addChatMessage('system', `❌ Bulk import failed: ${response.error || 'Unknown error'}`);
+            addChatMessage('system', `❌ Bulk import failed: ${response.error || 'No progress tracking available'}`);
         }
     } catch (error) {
         addChatMessage('system', `❌ Bulk import failed: ${error.message}`);
@@ -839,7 +1184,11 @@ async function importApifyPostsToWordPress(posts) {
         });
         
         if (response.success) {
-            addChatMessage('system', `🎉 Successfully imported ${response.imported_count} of ${response.total_posts} posts to WordPress as drafts!`);
+            let message = `🎉 Successfully imported ${response.imported_count} of ${response.total_posts} posts to WordPress as drafts!`;
+            if (response.drafts_url) {
+                message += `\n\n📝 <a href="${response.drafts_url}" target="_blank" style="color: #0073aa; text-decoration: underline;">View and publish your drafts in WordPress →</a>`;
+            }
+            addChatMessage('system', message);
             loadPosts(); // Refresh the posts list
         } else {
             addChatMessage('system', `❌ WordPress import failed: ${response.error}`);
@@ -1049,6 +1398,10 @@ function displayInstagramPosts(posts) {
 
 function showEmptyPostViewer() {
     const postDisplay = document.getElementById('post-display');
+    if (!postDisplay) {
+        console.log('Post display element not found');
+        return;
+    }
     postDisplay.innerHTML = `
         <div class="empty-state">
             <div class="icon">📱</div>
@@ -1060,6 +1413,10 @@ function showEmptyPostViewer() {
 
 function showPostViewer() {
     const postDisplay = document.getElementById('post-display');
+    if (!postDisplay) {
+        console.log('Post display element not found');
+        return;
+    }
     postDisplay.innerHTML = `
         <img id="post-image" class="post-image" src="" alt="Instagram post" />
         <div class="post-content">
@@ -1098,10 +1455,11 @@ function displayCurrentPost() {
     
     const post = currentPosts[currentPostIndex];
     
-    // Update image
+    // Update image with caching
     const postImage = document.getElementById('post-image');
-    if (postImage) {
-        postImage.src = post.image_url || '';
+    if (postImage && post.image_url) {
+        // Try to use cached version first, fallback to original
+        cacheAndDisplayImage(post.image_url, postImage);
         postImage.alt = post.alt_text || 'Instagram post';
     }
     
@@ -1259,3 +1617,176 @@ async function scrapeInstagramUrls(urls) {
         showEmptyPostViewer();
     }
 }
+
+// Instagram Image Caching Functions
+async function cacheAndDisplayImage(instagramUrl, imgElement) {
+    try {
+        // Check if already cached in memory
+        if (imageCache.has(instagramUrl)) {
+            const cachedUrl = imageCache.get(instagramUrl);
+            imgElement.src = cachedUrl;
+            return;
+        }
+        
+        // Show loading placeholder
+        imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkxvYWRpbmcgaW1hZ2UuLi48L3RleHQ+PC9zdmc+';
+        
+        // Try to cache the image
+        const response = await apiCall('/api/instagram/cache-image', {
+            method: 'POST',
+            body: JSON.stringify({ 
+                instagram_url: instagramUrl 
+            })
+        });
+        
+        if (response.success && response.cached_url) {
+            // Use cached version
+            imgElement.src = response.cached_url;
+            imageCache.set(instagramUrl, response.cached_url);
+            
+            console.log(`✅ Using cached image: ${response.cached_url}`);
+        } else {
+            // Fallback to original URL
+            console.warn(`⚠️ Cache failed, using original: ${instagramUrl}`);
+            imgElement.src = instagramUrl;
+        }
+        
+    } catch (error) {
+        console.error(`❌ Image caching error:`, error);
+        // Fallback to original URL
+        imgElement.src = instagramUrl;
+    }
+}
+
+async function preloadInstagramImages(posts) {
+    /**
+     * Preload Instagram images for better user experience
+     */
+    try {
+        const imageUrls = posts
+            .filter(post => post.image_url)
+            .map(post => post.image_url);
+        
+        if (imageUrls.length === 0) return;
+        
+        console.log(`📥 Preloading ${imageUrls.length} Instagram images...`);
+        
+        // Cache images in batches to avoid overwhelming the server
+        const batchSize = 3;
+        for (let i = 0; i < imageUrls.length; i += batchSize) {
+            const batch = imageUrls.slice(i, i + batchSize);
+            
+            const promises = batch.map(async (url) => {
+                try {
+                    const response = await apiCall('/api/instagram/cache-image', {
+                        method: 'POST',
+                        body: JSON.stringify({ instagram_url: url })
+                    });
+                    
+                    if (response.success) {
+                        imageCache.set(url, response.cached_url);
+                        return { url, cached: response.cached_url };
+                    }
+                } catch (error) {
+                    console.warn(`Failed to preload image: ${url}`, error);
+                    return { url, cached: null };
+                }
+            });
+            
+            await Promise.all(promises);
+            
+            // Small delay between batches
+            if (i + batchSize < imageUrls.length) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        console.log(`✅ Preloaded ${imageUrls.length} images`);
+        
+    } catch (error) {
+        console.error('Error preloading images:', error);
+    }
+}
+
+async function getCacheStats() {
+    /**
+     * Get image cache statistics
+     */
+    try {
+        const response = await apiCall('/api/instagram/image-cache/stats');
+        
+        if (response.success) {
+            const stats = response.cache_stats;
+            addChatMessage('system', 
+                `📊 **Image Cache Stats:**\n` +
+                `• Files: ${stats.total_files}\n` +
+                `• Size: ${stats.total_size_mb} MB\n` +
+                `• Directory: ${stats.cache_dir}`
+            );
+        } else {
+            addChatMessage('system', '❌ Failed to get cache stats');
+        }
+        
+    } catch (error) {
+        addChatMessage('system', `❌ Cache stats error: ${error.message}`);
+    }
+}
+
+async function clearImageCache() {
+    /**
+     * Clear all cached images
+     */
+    try {
+        if (!confirm('Clear all cached Instagram images? This will free up disk space but images will need to be re-downloaded.')) {
+            return;
+        }
+        
+        addChatMessage('system', '🧹 Clearing image cache...');
+        
+        const response = await apiCall('/api/instagram/image-cache/clear', {
+            method: 'POST'
+        });
+        
+        if (response.success) {
+            // Clear memory cache too
+            imageCache.clear();
+            
+            addChatMessage('system', 
+                `✅ Cleared ${response.removed_count} cached images`
+            );
+        } else {
+            addChatMessage('system', '❌ Failed to clear cache');
+        }
+        
+    } catch (error) {
+        addChatMessage('system', `❌ Cache clear error: ${error.message}`);
+    }
+}
+
+// Update the displayInstagramPosts function to preload images
+const originalDisplayInstagramPosts = displayInstagramPosts;
+displayInstagramPosts = function(posts) {
+    // Call original function
+    originalDisplayInstagramPosts(posts);
+    
+    // Preload images for better UX
+    if (posts && posts.length > 0) {
+        preloadInstagramImages(posts);
+    }
+};
+
+// Add cache management to chat commands
+const originalHandleComplexAction = handleComplexAction;
+handleComplexAction = async function(action) {
+    // Handle image cache commands
+    if (action.type === 'cache_stats') {
+        await getCacheStats();
+        return;
+    } else if (action.type === 'clear_image_cache') {
+        await clearImageCache();
+        return;
+    }
+    
+    // Call original function for other actions
+    return originalHandleComplexAction(action);
+};

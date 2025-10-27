@@ -1,0 +1,885 @@
+/* ===== SIGNS OF FALL - MODERN HOMEPAGE WITH IMAGE COLLAGE ===== */
+
+/* Reset and Base Styles */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+/* Header Redesign */
+.site-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.site-header .wp-block-group {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Navigation Styling */
+.wp-block-navigation {
+    background: none !important;
+}
+
+.wp-block-navigation__container {
+    gap: 2rem;
+}
+
+.wp-block-navigation-item a {
+    color: #333 !important;
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.wp-block-navigation-item a:hover {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea !important;
+}
+
+/* Hero Section with Creative Layout */
+.wp-block-cover {
+    min-height: 90vh !important;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.9), rgba(118, 75, 162, 0.9)) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Creative Background Pattern */
+.wp-block-cover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+        url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="signs" width="50" height="50" patternUnits="userSpaceOnUse"><rect width="20" height="15" x="15" y="17.5" fill="none" stroke="white" stroke-width="0.5" opacity="0.1" rx="2"/><circle cx="25" cy="10" r="2" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23signs)"/></svg>');
+    pointer-events: none;
+}
+
+.wp-block-cover .wp-block-cover__inner-container {
+    max-width: 1200px;
+    padding: 2rem;
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+/* Hero Text Content */
+.hero-content {
+    text-align: left;
+}
+
+.wp-block-cover h1 {
+    font-size: 4.5rem !important;
+    font-weight: 800 !important;
+    color: white !important;
+    margin-bottom: 1.5rem !important;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    line-height: 1.1 !important;
+}
+
+.hero-subtitle {
+    font-size: 1.4rem !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+    margin-bottom: 2rem !important;
+    font-weight: 400;
+}
+
+.hero-tagline {
+    font-size: 1.1rem !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    margin-bottom: 3rem !important;
+    font-style: italic;
+}
+
+/* Creative Image Collage */
+.hero-collage {
+    position: relative;
+    height: 500px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 15px;
+    transform: rotate(5deg);
+    transition: transform 0.3s ease;
+}
+
+.hero-collage:hover {
+    transform: rotate(0deg);
+}
+
+.collage-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.collage-item:hover {
+    transform: scale(1.05) rotate(-2deg);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.collage-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.collage-item:hover img {
+    transform: scale(1.1);
+}
+
+/* Special positioning for collage items */
+.collage-item:nth-child(1) {
+    grid-column: 1 / 3;
+    grid-row: 1 / 2;
+}
+
+.collage-item:nth-child(2) {
+    grid-column: 3 / 4;
+    grid-row: 1 / 3;
+}
+
+.collage-item:nth-child(3) {
+    grid-column: 1 / 2;
+    grid-row: 2 / 4;
+}
+
+.collage-item:nth-child(4) {
+    grid-column: 2 / 4;
+    grid-row: 3 / 4;
+}
+
+/* Floating elements around collage */
+.collage-float {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    animation: float 3s ease-in-out infinite;
+}
+
+.collage-float:nth-child(1) {
+    top: 10%;
+    right: -10%;
+    width: 60px;
+    height: 60px;
+    animation-delay: 0s;
+}
+
+.collage-float:nth-child(2) {
+    bottom: 20%;
+    left: -15%;
+    width: 80px;
+    height: 80px;
+    animation-delay: 1s;
+}
+
+.collage-float:nth-child(3) {
+    top: 60%;
+    right: -5%;
+    width: 50px;
+    height: 50px;
+    animation-delay: 2s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-20px) rotate(5deg); }
+}
+
+/* CTA Button Styling */
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.wp-block-button {
+    margin: 0 !important;
+}
+
+.wp-block-button__link {
+    background: linear-gradient(45deg, #ff6b6b, #ff8e53) !important;
+    color: white !important;
+    padding: 1.2rem 2.5rem !important;
+    border-radius: 50px !important;
+    font-weight: 600 !important;
+    font-size: 1.1rem !important;
+    text-decoration: none !important;
+    border: none !important;
+    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3) !important;
+    transition: all 0.3s ease !important;
+    display: inline-block !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.wp-block-button__link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.wp-block-button__link:hover::before {
+    left: 100%;
+}
+
+.wp-block-button__link:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 15px 40px rgba(255, 107, 107, 0.4) !important;
+    background: linear-gradient(45deg, #ff5252, #ff7043) !important;
+}
+
+/* Secondary button style */
+.wp-block-button.is-style-outline .wp-block-button__link {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(10px) !important;
+    color: white !important;
+}
+
+.wp-block-button.is-style-outline .wp-block-button__link:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Stats Section with Glass Effect */
+.stats-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    margin: -80px auto 0;
+    max-width: 1000px;
+    border-radius: 25px;
+    padding: 3rem 2rem;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+    position: relative;
+    z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.stats-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border-radius: 25px;
+    pointer-events: none;
+}
+
+.wp-block-columns.stats-section .wp-block-column {
+    text-align: center;
+    padding: 1.5rem;
+    position: relative;
+}
+
+.stats-section h3 {
+    font-size: 3.5rem !important;
+    font-weight: 800 !important;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem !important;
+    line-height: 1 !important;
+}
+
+.stats-section p {
+    color: #666 !important;
+    font-weight: 500;
+    margin: 0 !important;
+    font-size: 1.1rem;
+}
+
+/* Content Sections with Modern Cards */
+.content-section {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    margin: 4rem auto;
+    max-width: 1200px;
+    border-radius: 25px;
+    padding: 4rem 3rem;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.content-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #ff6b6b);
+}
+
+.content-section h2 {
+    color: #333 !important;
+    font-weight: 700 !important;
+    font-size: 2.8rem !important;
+    text-align: center;
+    margin-bottom: 3rem !important;
+    position: relative;
+}
+
+.content-section h2::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border-radius: 2px;
+}
+
+.content-section h3 {
+    color: #333 !important;
+    font-weight: 600 !important;
+    margin-bottom: 1.5rem !important;
+    font-size: 1.5rem !important;
+}
+
+.content-section p {
+    color: #666 !important;
+    font-size: 1.1rem;
+    line-height: 1.8;
+}
+
+/* Service Cards Grid */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin: 3rem 0;
+}
+
+.service-card {
+    background: linear-gradient(135deg, #f8f9ff, #e8f0ff);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.service-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.service-card:hover::before {
+    transform: scaleX(1);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 60px rgba(102, 126, 234, 0.2);
+}
+
+.service-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
+/* Testimonials with Creative Layout */
+.testimonials-section {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    margin: 4rem auto;
+    max-width: 1200px;
+    border-radius: 25px;
+    padding: 4rem 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.testimonials-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="testimonial-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23testimonial-pattern)"/></svg>');
+    pointer-events: none;
+}
+
+.testimonial-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2.5rem;
+    margin: 2rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+}
+
+.testimonial-card::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    font-size: 4rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-family: serif;
+}
+
+/* FAQ Section with Accordion Style */
+.wp-block-details {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-radius: 15px !important;
+    margin: 1rem 0 !important;
+    border: 1px solid rgba(102, 126, 234, 0.2) !important;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.wp-block-details summary {
+    background: rgba(102, 126, 234, 0.05) !important;
+    padding: 1.5rem 2rem !important;
+    font-weight: 600 !important;
+    color: #333 !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.wp-block-details summary::after {
+    content: '+';
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.wp-block-details[open] summary::after {
+    transform: translateY(-50%) rotate(45deg);
+}
+
+.wp-block-details summary:hover {
+    background: rgba(102, 126, 234, 0.1) !important;
+}
+
+.wp-block-details[open] summary {
+    background: #667eea !important;
+    color: white !important;
+}
+
+/* Blog Posts with Modern Cards */
+.wp-block-post-template {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)) !important;
+    gap: 2.5rem !important;
+    margin: 3rem 0 !important;
+}
+
+.wp-block-post {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.3s ease !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.wp-block-post:hover {
+    transform: translateY(-8px) !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+.wp-block-post-featured-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.wp-block-post-featured-image img {
+    width: 100% !important;
+    height: 250px !important;
+    object-fit: cover !important;
+    transition: transform 0.3s ease !important;
+}
+
+.wp-block-post:hover .wp-block-post-featured-image img {
+    transform: scale(1.05) !important;
+}
+
+.wp-block-post-content {
+    padding: 2rem !important;
+}
+
+.wp-block-post-title a {
+    color: #333 !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    font-size: 1.3rem !important;
+    line-height: 1.4 !important;
+}
+
+.wp-block-post-title a:hover {
+    color: #667eea !important;
+}
+
+/* Footer Redesign */
+.site-footer {
+    background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+    color: white !important;
+    padding: 5rem 2rem 2rem !important;
+    margin-top: 5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.site-footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footer-pattern" width="30" height="30" patternUnits="userSpaceOnUse"><rect width="15" height="10" x="7.5" y="10" fill="none" stroke="white" stroke-width="0.3" opacity="0.1" rx="1"/></pattern></defs><rect width="100" height="100" fill="url(%23footer-pattern)"/></svg>');
+    pointer-events: none;
+}
+
+.site-footer .wp-block-group {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+}
+
+.site-footer h3 {
+    color: white !important;
+    font-weight: 600 !important;
+    margin-bottom: 1.5rem !important;
+    font-size: 1.3rem !important;
+}
+
+.site-footer a {
+    color: rgba(255, 255, 255, 0.8) !important;
+    text-decoration: none !important;
+    transition: color 0.3s ease;
+    padding: 0.3rem 0;
+    display: inline-block;
+}
+
+.site-footer a:hover {
+    color: #667eea !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 1024px) {
+    .wp-block-cover .wp-block-cover__inner-container {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+        text-align: center;
+    }
+    
+    .hero-collage {
+        height: 400px;
+        transform: rotate(0deg);
+    }
+}
+
+@media (max-width: 768px) {
+    .wp-block-cover h1 {
+        font-size: 3rem !important;
+    }
+    
+    .wp-block-cover .wp-block-cover__inner-container {
+        padding: 1rem;
+    }
+    
+    .hero-collage {
+        height: 300px;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+    }
+    
+    .collage-item:nth-child(1) {
+        grid-column: 1 / 2;
+        grid-row: 1 / 2;
+    }
+    
+    .collage-item:nth-child(2) {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+    }
+    
+    .collage-item:nth-child(3) {
+        grid-column: 1 / 2;
+        grid-row: 2 / 3;
+    }
+    
+    .collage-item:nth-child(4) {
+        grid-column: 2 / 3;
+        grid-row: 2 / 3;
+    }
+    
+    .content-section {
+        margin: 2rem 1rem;
+        padding: 2.5rem 1.5rem;
+    }
+    
+    .content-section h2 {
+        font-size: 2.2rem !important;
+    }
+    
+    .stats-section {
+        margin: -50px 1rem 0;
+        padding: 2rem 1rem;
+    }
+    
+    .stats-section h3 {
+        font-size: 2.5rem !important;
+    }
+    
+    .hero-buttons {
+        justify-content: center;
+    }
+    
+    .services-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .wp-block-cover h1 {
+        font-size: 2.2rem !important;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.1rem !important;
+    }
+    
+    .wp-block-button__link {
+        padding: 1rem 2rem !important;
+        font-size: 1rem !important;
+    }
+    
+    .hero-collage {
+        height: 250px;
+    }
+}
+
+/* Animations and Interactions */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.content-section {
+    animation: slideInUp 0.8s ease-out;
+}
+
+.hero-content {
+    animation: slideInLeft 1s ease-out;
+}
+
+.hero-collage {
+    animation: slideInRight 1s ease-out 0.3s both;
+}
+
+/* Scroll-triggered animations */
+@media (prefers-reduced-motion: no-preference) {
+    .stats-section {
+        animation: slideInUp 0.8s ease-out 0.5s both;
+    }
+}
+
+/* Custom Utility Classes */
+.text-center {
+    text-align: center !important;
+}
+
+.gradient-text {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Hide/Override default theme elements */
+.wp-block-cover .wp-block-cover__background {
+    opacity: 0 !important;
+}
+
+.wp-block-group {
+    margin-bottom: 0 !important;
+}
+
+main {
+    background: transparent !important;
+}
+
+/* Professional color scheme variables */
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --accent-color: #ff6b6b;
+    --text-dark: #333;
+    --text-light: #666;
+    --background-light: rgba(255, 255, 255, 0.95);
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+}
+
+/* Special effects for yard sign business */
+.sign-showcase {
+    position: relative;
+    display: inline-block;
+}
+
+.sign-showcase::after {
+    content: '🏡';
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5rem;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px);
+    }
+    60% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Success indicators */
+.success-badge {
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
+/* Call-to-action enhancements */
+.cta-section {
+    background: linear-gradient(135deg, #ff6b6b, #ff8e53);
+    color: white;
+    text-align: center;
+    padding: 4rem 2rem;
+    border-radius: 25px;
+    margin: 4rem auto;
+    max-width: 800px;
+    box-shadow: 0 20px 60px rgba(255, 107, 107, 0.3);
+}
+
+.cta-section h2 {
+    color: white !important;
+    margin-bottom: 1rem !important;
+}
+
+.cta-section p {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 1.2rem !important;
+    margin-bottom: 2rem !important;
+}

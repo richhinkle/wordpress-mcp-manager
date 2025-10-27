@@ -23,10 +23,10 @@ def test_instagram_import():
         {
             'id': 'test_1',
             'shortcode': 'test_1',
-            'caption': 'Test post from Card My Yard! 🎉 #cardmyyard #signs #celebration',
+            'caption': 'Test post from Example Business! 🎉 #example_business #signs #celebration',
             'image_url': 'https://via.placeholder.com/400x400/FF6B6B/FFFFFF?text=Card+My+Yard+1',
             'post_url': 'https://www.instagram.com/p/test1/',
-            'hashtags': ['cardmyyard', 'signs', 'celebration'],
+            'hashtags': ['example_business', 'signs', 'celebration'],
             'timestamp': 1640995200,
             'date_posted': '2022-01-01 00:00:00',
             'extraction_method': 'test_data'
@@ -135,7 +135,7 @@ def test_instagram_import():
     print("3. Try these chat commands:")
     print("   - 'instagram help'")
     print("   - 'import instagram post [URL]'")
-    print("4. Use real Instagram URLs from @cardmyyard_oviedo")
+    print("4. Use real Instagram URLs from @example_user")
 
 if __name__ == "__main__":
     test_instagram_import()

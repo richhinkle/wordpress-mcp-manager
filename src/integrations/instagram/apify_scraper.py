@@ -440,7 +440,7 @@ class ApifyInstagramManager:
         self.mcp_client = mcp_client
         logger.info("ApifyInstagramManager initialized with caching")
     
-    def import_user_posts_to_wordpress(self, username: str, limit: int = 10, auto_publish: bool = False) -> Dict:
+    def import_user_posts_to_wordpress(self, username: str, limit: int = 10, auto_publish: bool = False, progress_session_id: str = None) -> Dict:
         """
         Scrape user posts via Apify and import directly to WordPress
         
@@ -455,8 +455,22 @@ class ApifyInstagramManager:
         try:
             logger.info(f"Starting bulk import for @{username}, limit: {limit}")
             
+            # Import progress tracking functions
+            if progress_session_id:
+                try:
+                    from ...api.progress_routes import update_progress
+                    update_progress(progress_session_id, step=5, message=f"🔍 Scraping @{username} via Apify...")
+                except ImportError:
+                    pass
+            
             # Step 1: Scrape posts
             posts = self.scraper.scrape_user_posts(username, limit)
+            
+            if progress_session_id:
+                try:
+                    update_progress(progress_session_id, step=20, message=f"📱 Found {len(posts)} posts, starting import...")
+                except:
+                    pass
             
             if not posts:
                 return {
@@ -468,19 +482,72 @@ class ApifyInstagramManager:
             
             # Step 2: Import to WordPress
             imported_posts = []
+            total_posts = len(posts)
             
-            for post in posts:
+            for i, post in enumerate(posts, 1):
                 try:
-                    # Upload image to WordPress
+                    # Download and upload image to WordPress using proven breakthrough method
                     media_id = None
                     if post.get('image_url'):
-                        media_result = self.mcp_client.upload_media(
-                            url=post['image_url'],
-                            title=f"Instagram - @{username} - {post.get('caption', '')[:50]}",
-                            alt=post.get('caption', '')[:100]
-                        )
-                        if media_result and 'id' in media_result:
-                            media_id = media_result['id']
+                        try:
+                            # Use the proven working Instagram image downloader
+                            from ...utils.instagram_image_downloader_working import InstagramImageDownloader
+                            
+                            downloader = InstagramImageDownloader()
+                            success, image_data, error = downloader.download_image(post['image_url'])
+                            
+                            if success and image_data:
+                                logger.info(f"✅ Downloaded {len(image_data)} bytes for post {post.get('shortcode')}")
+                                
+                                # Upload to WordPress using REST API
+                                wp_url = self.mcp_client.wordpress_url.replace('/wp-json/mcp/v1/sse', '')
+                                upload_url = f"{wp_url}/wp-json/wp/v2/media"
+                                
+                                # Use WordPress credentials from environment
+                                import os
+                                wp_username = os.getenv('WORDPRESS_USERNAME', 'admin')
+                                wp_password = os.getenv('WORDPRESS_PASSWORD', '')
+                                
+                                if wp_username and wp_password:
+                                    import base64
+                                    credentials = base64.b64encode(f"{wp_username}:{wp_password}".encode()).decode()
+                                    
+                                    filename = f"instagram_{post.get('username', 'unknown')}_{post.get('shortcode', 'unknown')}.jpg"
+                                    
+                                    files = {
+                                        'file': (filename, image_data, 'image/jpeg')
+                                    }
+                                    
+                                    upload_headers = {
+                                        'Authorization': f'Basic {credentials}'
+                                    }
+                                    
+                                    upload_response = requests.post(upload_url, files=files, headers=upload_headers, timeout=60)
+                                    
+                                    if upload_response.status_code == 201:
+                                        media_data = upload_response.json()
+                                        media_id = media_data['id']
+                                        logger.info(f"✅ Successfully uploaded image for post {post.get('shortcode')} (Media ID: {media_id})")
+                                    else:
+                                        logger.warning(f"⚠️ WordPress upload failed: {upload_response.status_code} - {upload_response.text[:200]}")
+                                else:
+                                    logger.warning("⚠️ WordPress credentials not configured for direct upload")
+                            else:
+                                logger.warning(f"⚠️ Image download failed for post {post.get('shortcode')}: {error}")
+                            
+                        except Exception as e:
+                            logger.warning(f"⚠️ Image download/upload failed for post {post.get('shortcode')}: {e}")
+                            # Fall back to MCP upload (will likely fail but worth trying)
+                            try:
+                                media_result = self.mcp_client.upload_media(
+                                    url=post['image_url'],
+                                    title=f"Instagram - @{username} - {post.get('caption', '')[:50]}",
+                                    alt=post.get('caption', '')[:100]
+                                )
+                                if media_result and 'id' in media_result:
+                                    media_id = media_result['id']
+                            except:
+                                pass
                     
                     # Create post title
                     post_title = f"@{username} - {datetime.now().strftime('%Y-%m-%d')}"
@@ -489,11 +556,8 @@ class ApifyInstagramManager:
                         if first_line and not first_line.startswith('#'):
                             post_title = first_line
                     
-                    # Enhanced content with engagement metrics
-                    content = post.get('caption', '')
-                    content += f"\n\n---\n📊 {post.get('likes_count', 0)} likes • {post.get('comments_count', 0)} comments"
-                    content += f"\n📅 Posted: {post.get('date_posted', 'Unknown')}"
-                    content += f"\n🔗 [View on Instagram]({post.get('post_url', '')})"
+                    # Enhanced content with beautiful Instagram-style formatting
+                    content = self._format_instagram_post_content(post, username)
                     
                     # Create WordPress post
                     status = 'publish' if auto_publish else 'draft'
@@ -550,9 +614,46 @@ class ApifyInstagramManager:
                         'status': status
                     })
                     
+                    # Update progress
+                    if progress_session_id:
+                        try:
+                            progress_step = 20 + int((i / total_posts) * 70)  # 20-90% range for import
+                            update_progress(
+                                progress_session_id, 
+                                step=progress_step, 
+                                message=f"📝 Imported {len(imported_posts)} of {total_posts} posts...",
+                                details={'imported': len(imported_posts), 'total': total_posts}
+                            )
+                        except:
+                            pass
+                    
                 except Exception as e:
                     logger.error(f"Error importing post {post.get('shortcode')}: {e}")
+                    
+                    # Update progress even on error
+                    if progress_session_id:
+                        try:
+                            progress_step = 20 + int((i / total_posts) * 70)
+                            update_progress(
+                                progress_session_id, 
+                                step=progress_step, 
+                                message=f"📝 Processing {i} of {total_posts} posts (some errors)...",
+                                details={'imported': len(imported_posts), 'total': total_posts, 'errors': i - len(imported_posts)}
+                            )
+                        except:
+                            pass
                     continue
+            
+            # Final progress update
+            if progress_session_id:
+                try:
+                    from ...api.progress_routes import complete_progress
+                    complete_progress(
+                        progress_session_id, 
+                        f"✅ Successfully imported {len(imported_posts)} of {len(posts)} posts from @{username}!"
+                    )
+                except:
+                    pass
             
             return {
                 'success': True,
@@ -571,6 +672,58 @@ class ApifyInstagramManager:
                 'scraped_count': 0,
                 'imported_count': 0
             }
+    
+    def _format_instagram_post_content(self, post, username):
+        """
+        Format Instagram post content with clean, readable styling
+        """
+        caption = post.get('caption', '').strip()
+        hashtags = post.get('hashtags', [])
+        likes_count = post.get('likes_count', 0)
+        comments_count = post.get('comments_count', 0)
+        date_posted = post.get('date_posted', 'Unknown')
+        post_url = post.get('post_url', '')
+        
+        # Split caption and hashtags
+        caption_lines = caption.split('\n')
+        main_caption = []
+        caption_hashtags = []
+        
+        for line in caption_lines:
+            if line.strip().startswith('#') or all(word.startswith('#') for word in line.strip().split() if word):
+                caption_hashtags.extend([word for word in line.split() if word.startswith('#')])
+            else:
+                main_caption.append(line)
+        
+        # Combine hashtags from caption and metadata
+        all_hashtags = list(set(caption_hashtags + hashtags))
+        
+        # Build clean, readable content
+        content_parts = []
+        
+        # Main caption (clean, without hashtags)
+        clean_caption = '\n'.join(main_caption).strip()
+        if clean_caption:
+            content_parts.append(clean_caption)
+        
+        # Add hashtags as a clean list
+        if all_hashtags:
+            hashtag_text = ' '.join([f'#{tag.lstrip("#")}' for tag in all_hashtags[:10]])
+            content_parts.append(f"\n🏷️ **Tags:** {hashtag_text}")
+        
+        # Add Instagram metadata in a clean format
+        metadata_parts = [
+            "---",
+            f"📸 **Instagram Post by @{username}**",
+            f"📅 **Posted:** {date_posted}",
+            f"❤️ **{likes_count:,} likes** • 💬 **{comments_count:,} comments**",
+            f"🔗 [**View Original on Instagram**]({post_url})",
+            "---"
+        ]
+        
+        content_parts.extend(metadata_parts)
+        
+        return '\n\n'.join(content_parts)
 
 def test_apify_scraper():
     """Test function for Apify scraper (requires API token)"""
@@ -599,8 +752,8 @@ def test_apify_scraper():
                 print(f"Monthly usage: {monthly}")
         
         # Test profile scraping
-        print(f"\n👤 Getting profile info for @cardmyyard_oviedo...")
-        profile = scraper.get_user_profile('cardmyyard_oviedo')
+        print(f"\n👤 Getting profile info for @example_user...")
+        profile = scraper.get_user_profile('example_user')
         if profile:
             print(f"✅ Profile found:")
             print(f"   Full name: {profile.get('full_name')}")
@@ -608,8 +761,8 @@ def test_apify_scraper():
             print(f"   Posts: {profile.get('posts_count')}")
         
         # Test post scraping (small sample)
-        print(f"\n📱 Scraping 3 recent posts from @cardmyyard_oviedo...")
-        posts = scraper.scrape_user_posts('cardmyyard_oviedo', limit=3)
+        print(f"\n📱 Scraping 3 recent posts from @example_user...")
+        posts = scraper.scrape_user_posts('example_user', limit=3)
         
         print(f"✅ Scraped {len(posts)} posts:")
         for i, post in enumerate(posts, 1):

@@ -46,8 +46,8 @@ git checkout -b feature/apify-instagram-scraper
 **Key Methods**:
 ```python
 scraper = ApifyInstagramScraper(api_token)
-posts = scraper.scrape_user_posts('cardmyyard_oviedo', limit=50)
-profile = scraper.get_user_profile('cardmyyard_oviedo')
+posts = scraper.scrape_user_posts('example_user', limit=50)
+profile = scraper.get_user_profile('example_user')
 usage = scraper.get_usage_info()
 ```
 
@@ -159,8 +159,8 @@ Format Data → WordPress MCP → Create Posts → Return Results
    
    # Test via chat interface:
    # - "apify status" - Check integration
-   # - "scrape instagram @cardmyyard_oviedo" - Test scraping
-   # - "bulk import @cardmyyard_oviedo" - Test full workflow
+   # - "scrape instagram @example_user" - Test scraping
+   # - "bulk import @example_user" - Test full workflow
    ```
 
 3. **API Endpoints Available**:

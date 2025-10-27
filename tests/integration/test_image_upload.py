@@ -3,6 +3,11 @@
 Test script to verify image upload functionality
 """
 import os
+import sys
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from src.utils.image_cache import ImageCache
 from src.utils.wordpress_media import WordPressMediaUploader
 

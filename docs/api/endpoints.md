@@ -25,7 +25,7 @@ Scrape posts from a specific Instagram user using Apify's professional scraper.
 **Request Body:**
 ```json
 {
-  "username": "cardmyyard_oviedo",
+  "username": "example_user",
   "limit": 20
 }
 ```
@@ -51,14 +51,14 @@ Scrape posts from a specific Instagram user using Apify's professional scraper.
       }
     ],
     "profile": {
-      "username": "cardmyyard_oviedo",
-      "fullName": "Card My Yard Oviedo",
+      "username": "example_user",
+      "fullName": "Example Business Oviedo",
       "followersCount": 1250,
       "isVerified": false
     }
   },
   "cached": false,
-  "cache_key": "apify_user_cardmyyard_oviedo"
+  "cache_key": "apify_user_example_user"
 }
 ```
 
@@ -71,7 +71,7 @@ Import multiple Instagram posts directly to WordPress as drafts.
 **Request Body:**
 ```json
 {
-  "username": "cardmyyard_oviedo",
+  "username": "example_user",
   "limit": 10,
   "import_images": true
 }
@@ -107,8 +107,8 @@ Get detailed profile information for an Instagram user.
 {
   "success": true,
   "data": {
-    "username": "cardmyyard_oviedo",
-    "fullName": "Card My Yard Oviedo",
+    "username": "example_user",
+    "fullName": "Example Business Oviedo",
     "biography": "Profile bio text",
     "followersCount": 1250,
     "followingCount": 500,
@@ -322,7 +322,7 @@ Clear cache for a specific Instagram user.
 **Request Body:**
 ```json
 {
-  "username": "cardmyyard_oviedo"
+  "username": "example_user"
 }
 ```
 
@@ -331,7 +331,7 @@ Clear cache for a specific Instagram user.
 {
   "success": true,
   "cleared_files": 2,
-  "message": "Cache cleared for user: cardmyyard_oviedo"
+  "message": "Cache cleared for user: example_user"
 }
 ```
 
@@ -421,7 +421,7 @@ const response = await fetch('/api/instagram/apify/scrape-user', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    username: 'cardmyyard_oviedo',
+    username: 'example_user',
     limit: 20
   })
 });
@@ -438,7 +438,7 @@ import requests
 # Bulk import Instagram posts
 response = requests.post('http://localhost:5000/api/instagram/apify/bulk-import', 
   json={
-    'username': 'cardmyyard_oviedo',
+    'username': 'example_user',
     'limit': 10,
     'import_images': True
   }

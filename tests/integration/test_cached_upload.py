@@ -3,7 +3,12 @@
 Test script to verify cached image upload functionality
 """
 import os
+import sys
 from pathlib import Path
+
+# Add project root to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from src.utils.image_cache import ImageCache
 from src.utils.wordpress_media import WordPressMediaUploader
 

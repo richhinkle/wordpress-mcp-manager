@@ -53,21 +53,21 @@ Based on your "API setup with Facebook login" page, you need to:
 ### 2.3 Step 3: Configure Webhooks (Optional)
 Scroll down to "Configure webhooks" section and add:
 - **Callback URL**: `http://localhost:5000/auth/instagram/callback`
-- **Verify Token**: `cardmyyard_webhook_2024` (or any string you choose)
+- **Verify Token**: `example_business_webhook_2024` (or any string you choose)
 
 ### 2.4 Step 4: Complete App Review (For Production)
 For now, you can skip "Complete app review" - your app will work in development mode with test users.
 
 ## Important Notes for Current Interface
 
-**Instagram App Name**: I can see yours is "CardMyYard_WP-IG" - that's perfect!
+**Instagram App Name**: I can see yours is "example_business_WP-IG" - that's perfect!
 
 **Instagram App ID**: `1753401634114971` (visible in your screenshot)
 
 **Instagram App Secret**: Click "Show" to reveal (keep this secure!)
 
 ### Account Type Requirements
-The current Instagram API requires **Instagram Business or Creator accounts**. If @cardmyyard_oviedo is a personal account, you'll need to:
+The current Instagram API requires **Instagram Business or Creator accounts**. If @example_user is a personal account, you'll need to:
 
 1. Go to Instagram app settings
 2. Switch to "Professional account" 
@@ -114,7 +114,7 @@ python run.py
 ### 4.2 Test with API Integration Helper (Recommended First)
 Before testing with your WordPress app:
 
-1. **Convert @cardmyyard_oviedo to Business Account**:
+1. **Convert @example_user to Business Account**:
    - Open Instagram app → Settings → Account
    - Switch to Professional Account → Business
    - Complete business profile setup
@@ -133,7 +133,7 @@ Before testing with your WordPress app:
 1. Open http://localhost:5000
 2. In chat, type: `connect instagram`
 3. Click "Connect Instagram Account"
-4. Login with @cardmyyard_oviedo account
+4. Login with @example_user account
 5. Grant permissions to your app
 6. You should be redirected back with success
 
@@ -186,7 +186,7 @@ Based on your current Meta Developer Console:
 ### 🔄 Step 3: Configure Webhooks
 In the "Configure webhooks" section:
 - **Callback URL**: `http://localhost:5000/auth/instagram/callback`
-- **Verify Token**: `cardmyyard_webhook_2024`
+- **Verify Token**: `example_business_webhook_2024`
 
 ### 🔄 Step 4: Get App Credentials
 Go back to main Instagram API page:
@@ -212,7 +212,7 @@ SECRET_KEY=your-random-secret-key
 
 **Important**: The current Instagram API requires a **Business or Creator account**. 
 
-To convert @cardmyyard_oviedo:
+To convert @example_user:
 1. Open Instagram app
 2. Go to Settings → Account → Switch to professional account
 3. Choose "Business" 

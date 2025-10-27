@@ -17,7 +17,7 @@ load_dotenv()
 
 class WordPressMCPServer:
     def __init__(self):
-        self.wordpress_url = os.getenv('WORDPRESS_URL', 'https://signsoffall.com/wp-json/mcp/v1/sse')
+        self.wordpress_url = os.getenv('WORDPRESS_URL', 'https://your-site.com/wp-json/mcp/v1/sse')
         self.access_token = os.getenv('ACCESS_TOKEN', '')
         
         if not self.access_token:

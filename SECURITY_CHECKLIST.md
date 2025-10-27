@@ -20,8 +20,8 @@
 
 ### 1. Regenerate Compromised Credentials
 **CRITICAL**: The following credentials were exposed in git history:
-- WordPress MCP Access Token: `rAx9QECb9LRIBHM5BSsPm09PT9eQt82k`
-- WordPress Site: `signsoffall.com`
+- WordPress MCP Access Token: `[REDACTED - REGENERATE REQUIRED]`
+- WordPress Site: `[YOUR-SITE.com]`
 
 **You MUST:**
 1. Log into your WordPress admin panel

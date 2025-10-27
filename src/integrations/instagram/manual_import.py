@@ -132,10 +132,10 @@ class InstagramManualImport:
                 'hashtags': 'hashtags,example'
             },
             {
-                'caption': 'Another sample post for Card My Yard #cardmyyard #signs',
+                'caption': 'Another sample post for Example Business #example_business #signs',
                 'image_url': 'https://example.com/image2.jpg', 
                 'post_url': 'https://www.instagram.com/p/DEF456/',
-                'hashtags': 'cardmyyard,signs'
+                'hashtags': 'example_business,signs'
             }
         ]
         
@@ -185,7 +185,7 @@ def demo_manual_import():
     print("\n1. Creating sample CSV template...")
     template_file = importer.create_sample_csv()
     
-    # Demo URL import (with sample URLs for cardmyyard_oviedo)
+    # Demo URL import (with sample URLs for example_user)
     print("\n2. Demo URL Import...")
     sample_urls = [
         "https://www.instagram.com/p/sample1/",  # These would be real URLs

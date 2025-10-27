@@ -315,7 +315,7 @@ def test_instagram_oauth():
     
     print(f"\n📋 Setup Instructions:")
     print(f"1. Visit the URL above")
-    print(f"2. Login with Instagram account (@cardmyyard_oviedo)")
+    print(f"2. Login with Instagram account (@example_user)")
     print(f"3. Grant permissions to your app")
     print(f"4. Copy the 'code' parameter from the callback URL")
     print(f"5. Use the code to get access token")
